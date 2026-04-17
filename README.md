@@ -36,7 +36,7 @@ proxy cannot detect divergence.
 ## Install
 
 ```bash
-git clone https://github.com/tnzxpool/xmr-proxy
+git clone https://github.com/xmr-hashguard/xmr-proxy
 cd xmr-proxy
 npm install
 ```
@@ -45,14 +45,34 @@ npm install
 
 ## Run
 
+> **Windows / PowerShell:** replace `\` with `` ` `` for line continuation, or use the one-liner form below.
+
 ```bash
+# bash / Git Bash / macOS / Linux
 node bin/xmr-proxy.js \
   --pool      pool.hashvault.pro:3333 \
   --fallback  pool.supportxmr.com:3333 \
   --health    http://pool.hashvault.pro/pool/health \
   --seed      wss://peer.example.com:8765
+```
 
-# then point XMRig to:
+```powershell
+# PowerShell (Windows)
+node bin/xmr-proxy.js `
+  --pool      pool.hashvault.pro:3333 `
+  --fallback  pool.supportxmr.com:3333 `
+  --health    http://pool.hashvault.pro/pool/health `
+  --seed      wss://peer.example.com:8765
+```
+
+```bash
+# one-liner (any shell)
+node bin/xmr-proxy.js --pool pool.hashvault.pro:3333 --fallback pool.supportxmr.com:3333 --health http://pool.hashvault.pro/pool/health --seed wss://peer.example.com:8765
+```
+
+Then point XMRig to:
+
+```bash
 xmrig --url 127.0.0.1:3333 --user YOUR_ADDRESS
 ```
 
@@ -166,8 +186,8 @@ ws              ^8.0.0   — WebSocket (via xmr-mesh)
 
 | Repo | Role |
 |------|------|
-| [xmr-hashguard](https://github.com/tnzxpool/xmr-hashguard) | Detection library — `HashrateMonitor` + `PrevhashMonitor` |
-| [xmr-mesh](https://github.com/tnzxpool/xmr-mesh) | Encrypted federation transport — WebSocket gossip mesh |
+| [xmr-hashguard](https://github.com/xmr-hashguard/xmr-hashguard) | Detection library — `HashrateMonitor` + `PrevhashMonitor` |
+| [xmr-mesh](https://github.com/xmr-hashguard/xmr-mesh) | Encrypted federation transport — WebSocket gossip mesh |
 
 ---
 
