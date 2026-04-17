@@ -36,7 +36,7 @@ proxy cannot detect divergence.
 ## Install
 
 ```bash
-git clone https://github.com/xmr-proxy/xmr-proxy
+git clone https://github.com/tnzxpool/xmr-proxy
 cd xmr-proxy
 npm install
 ```
@@ -166,8 +166,8 @@ ws              ^8.0.0   — WebSocket (via xmr-mesh)
 
 | Repo | Role |
 |------|------|
-| [xmr-hashguard](https://github.com/xmr-hashguard/xmr-hashguard) | Detection library — `HashrateMonitor` + `PrevhashMonitor` |
-| [xmr-mesh](https://github.com/xmr-mesh/xmr-mesh) | Encrypted federation transport — WebSocket gossip mesh |
+| [xmr-hashguard](https://github.com/tnzxpool/xmr-hashguard) | Detection library — `HashrateMonitor` + `PrevhashMonitor` |
+| [xmr-mesh](https://github.com/tnzxpool/xmr-mesh) | Encrypted federation transport — WebSocket gossip mesh |
 
 ---
 
