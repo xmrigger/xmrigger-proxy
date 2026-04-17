@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xmr-proxy — Selfish Mining Detection Demo</title>
+<style>
+  :root {
+    --bg:       #0d1117;
+    --bg2:      #161b22;
+    --bg3:      #21262d;
+    --border:   #30363d;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
+    --green:    #3fb950;
+    --yellow:   #d29922;
+    --red:      #f85149;
+    --blue:     #58a6ff;
+    --purple:   #bc8cff;
+    --orange:   #ffa657;
+    --green-bg: rgba(63,185,80,0.12);
+    --red-bg:   rgba(248,81,73,0.12);
+    --yellow-bg:rgba(210,153,34,0.12);
+    --blue-bg:  rgba(88,166,255,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+  }
+
+  /* ── Header ── */
+  header { text-align: center; margin-bottom: 40px; }
+  header h1 { font-size: 1.7rem; font-weight: 700; color: var(--blue); letter-spacing: -0.5px; }
+  header p  { color: var(--muted); margin-top: 8px; font-size: 0.95rem; max-width: 560px; line-height: 1.6; }
+
+  /* ── Step counter ── */
+  .step-counter {
+    font-size: 0.8rem; color: var(--muted);
+    margin-bottom: 20px; letter-spacing: 1px; text-transform: uppercase;
+  }
+
+  /* ── Narrative card ── */
+  .narrative {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    max-width: 700px;
+    width: 100%;
+    margin-bottom: 28px;
+    min-height: 90px;
+    position: relative;
+  }
+  .narrative .phase-label {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+  .narrative .phase-text {
+    font-size: 1rem; line-height: 1.65; color: var(--text);
+  }
+  .narrative .phase-text code {
+    background: var(--bg3); border-radius: 4px; padding: 1px 6px;
+    font-family: 'Consolas', monospace; font-size: 0.88em; color: var(--orange);
+  }
+
+  /* ── Network diagram ── */
+  .diagram {
+    max-width: 700px; width: 100%;
+    margin-bottom: 28px;
+    position: relative;
+  }
+  svg#net { width: 100%; height: auto; display: block; }
+
+  /* ── Hash display ── */
+  .hashes {
+    display: flex; gap: 16px; max-width: 700px; width: 100%;
+    margin-bottom: 28px;
+  }
+  .hash-box {
+    flex: 1; background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+    transition: border-color 0.4s, background 0.4s;
+  }
+  .hash-box .hb-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .hash-box .hb-val   { font-family: 'Consolas', monospace; font-size: 0.82rem; color: var(--blue); word-break: break-all; line-height: 1.5; }
+  .hash-box.match  { border-color: var(--green); background: var(--green-bg); }
+  .hash-box.match .hb-val { color: var(--green); }
+  .hash-box.diverge{ border-color: var(--red);   background: var(--red-bg);   }
+  .hash-box.diverge .hb-val { color: var(--red); }
+  .hash-box.resolved{ border-color: var(--green); background: var(--green-bg); }
+  .hash-box.resolved .hb-val { color: var(--green); }
+
+  /* ── Event log ── */
+  .log {
+    max-width: 700px; width: 100%;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px;
+    font-family: 'Consolas', monospace; font-size: 0.82rem;
+    line-height: 1.9; min-height: 120px; margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .log-line { opacity: 0; transform: translateX(-8px); transition: opacity 0.35s, transform 0.35s; }
+  .log-line.show { opacity: 1; transform: none; }
+  .log-line.green  { color: var(--green); }
+  .log-line.yellow { color: var(--yellow); }
+  .log-line.red    { color: var(--red); }
+  .log-line.blue   { color: var(--blue); }
+  .log-line.muted  { color: var(--muted); }
+  .log-line.purple { color: var(--purple); }
+
+  /* ── Progress bar ── */
+  .progress-track {
+    max-width: 700px; width: 100%;
+    height: 4px; background: var(--bg3); border-radius: 2px;
+    margin-bottom: 28px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--blue);
+    border-radius: 2px; transition: width 0.5s ease, background 0.5s;
+  }
+
+  /* ── Buttons ── */
+  .controls { display: flex; gap: 12px; max-width: 700px; width: 100%; }
+  .btn {
+    flex: 1; padding: 13px 20px; border-radius: 8px; border: none;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    transition: background 0.2s, transform 0.1s, opacity 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--blue); color: #0d1117; }
+  .btn-primary:hover { background: #79c0ff; }
+  .btn-primary:disabled { background: var(--bg3); color: var(--muted); cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+
+  /* ── SVG nodes ── */
+  .node-pool-a    { transition: all 0.5s; }
+  .node-pool-b    { transition: all 0.5s; }
+  .node-proxy-a   { transition: all 0.5s; }
+  .node-proxy-b   { transition: all 0.5s; }
+  .node-mesh      { transition: all 0.5s; }
+  .node-miner-a   { transition: all 0.5s; }
+  .node-miner-b   { transition: all 0.5s; }
+
+  /* ── Packet animation ── */
+  @keyframes packetFlow {
+    0%   { opacity: 0; offset-distance: 0%; }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { opacity: 0; offset-distance: 100%; }
+  }
+  .packet {
+    position: absolute; width: 10px; height: 10px;
+    border-radius: 50%; pointer-events: none;
+    animation: packetFlow 1s ease-in-out forwards;
+    offset-rotate: 0deg;
+  }
+
+  /* ── Alert flash ── */
+  @keyframes alertPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+  }
+  .alert-pulse { animation: alertPulse 0.7s ease-in-out 3; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 40px; color: var(--muted); font-size: 0.8rem; text-align: center;
+  }
+  footer a { color: var(--blue); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── Step dots ── */
+  .dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--bg3); transition: background 0.3s;
+  }
+  .dot.done    { background: var(--muted); }
+  .dot.active  { background: var(--blue); }
+  .dot.alert   { background: var(--red); }
+  .dot.success { background: var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>xmr-proxy — Selfish Mining Detection</h1>
+  <p>A transparent Stratum proxy detects when a pool is building on a private chain,
+     by comparing <code style="color:var(--orange);background:var(--bg2);padding:1px 6px;border-radius:4px;font-family:monospace">prevhash</code>
+     values across a federation mesh. Zero protocol changes. Zero miner modifications.</p>
+</header>
+
+<div class="step-counter" id="stepCounter">Step 1 of 10</div>
+<div class="dots" id="dots"></div>
+
+<div class="narrative" id="narrative">
+  <div class="phase-label" id="phaseLabel" style="color:var(--blue)">OVERVIEW</div>
+  <div class="phase-text" id="phaseText"></div>
+</div>
+
+<div class="diagram">
+  <svg id="net" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#30363d"/>
+      </marker>
+      <marker id="arr-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#58a6ff"/>
+      </marker>
+      <marker id="arr-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#f85149"/>
+      </marker>
+      <marker id="arr-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#3fb950"/>
+      </marker>
+      <filter id="glow-green">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="glow-red">
+        <feGaussianBlur stdDeviation="4" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- Lines (static) -->
+    <!-- Pool A → Proxy A -->
+    <line id="line-poolA-proxyA" x1="140" y1="80"  x2="270" y2="80"  stroke="#30363d" stroke-width="2" marker-end="url(#arr)"/>
+    <!-- Proxy A → Miner A -->
+    <line id="line-proxyA-minerA" x1="270" y1="80"  x2="140" y2="80"  stroke="#30363d" stroke-width="2" marker-end="url(#arr)" opacity="0"/>
+    <!-- Pool B → Proxy B -->
+    <line id="line-poolB-proxyB" x1="560" y1="80"  x2="430" y2="80"  stroke="#30363d" stroke-width="2" marker-end="url(#arr)"/>
+    <!-- Proxy A ↔ Mesh -->
+    <line id="line-proxyA-mesh" x1="310" y1="100" x2="310" y2="180" stroke="#30363d" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <!-- Proxy B ↔ Mesh -->
+    <line id="line-proxyB-mesh" x1="390" y1="100" x2="390" y2="180" stroke="#30363d" stroke-width="1.5" stroke-dasharray="5,4"/>
+    <!-- Proxy A → Miner A -->
+    <line x1="310" y1="100" x2="310" y2="260" stroke="#30363d" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.5"/>
+    <!-- Proxy B → Miner B -->
+    <line x1="390" y1="100" x2="390" y2="260" stroke="#30363d" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.5"/>
+
+    <!-- Nodes -->
+    <!-- Pool A -->
+    <g id="node-pool-a">
+      <rect x="40" y="50" width="100" height="60" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5" id="rect-pool-a"/>
+      <text x="90" y="77" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="600" letter-spacing="0.5">POOL A</text>
+      <text x="90" y="93" text-anchor="middle" fill="#3fb950" font-size="9">● Honest</text>
+      <text x="90" y="106" text-anchor="middle" fill="#58a6ff" font-size="8" id="ph-pool-a" font-family="Consolas,monospace">a1b2c3…100</text>
+    </g>
+
+    <!-- Proxy A -->
+    <g id="node-proxy-a">
+      <rect x="260" y="50" width="100" height="60" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5" id="rect-proxy-a"/>
+      <text x="310" y="74" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="600" letter-spacing="0.5">PROXY A</text>
+      <text x="310" y="90" text-anchor="middle" fill="#58a6ff" font-size="8" id="ph-proxy-a" font-family="Consolas,monospace">—</text>
+      <text x="310" y="104" text-anchor="middle" fill="#8b949e" font-size="8">xmr-proxy</text>
+    </g>
+
+    <!-- Proxy B -->
+    <g id="node-proxy-b">
+      <rect x="390" y="50" width="100" height="60" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5" id="rect-proxy-b"/>
+      <text x="440" y="74" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="600" letter-spacing="0.5">PROXY B</text>
+      <text x="440" y="90" text-anchor="middle" fill="#58a6ff" font-size="8" id="ph-proxy-b" font-family="Consolas,monospace">—</text>
+      <text x="440" y="104" text-anchor="middle" fill="#8b949e" font-size="8">xmr-proxy</text>
+    </g>
+
+    <!-- Pool B -->
+    <g id="node-pool-b">
+      <rect x="560" y="50" width="100" height="60" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5" id="rect-pool-b"/>
+      <text x="610" y="77" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="600" letter-spacing="0.5">POOL B</text>
+      <text x="610" y="93" text-anchor="middle" fill="#8b949e" font-size="9" id="pool-b-status">● Honest</text>
+      <text x="610" y="106" text-anchor="middle" fill="#58a6ff" font-size="8" id="ph-pool-b" font-family="Consolas,monospace">a1b2c3…100</text>
+    </g>
+
+    <!-- Mesh -->
+    <g id="node-mesh">
+      <rect x="280" y="165" width="140" height="46" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5" id="rect-mesh"/>
+      <text x="350" y="184" text-anchor="middle" fill="#8b949e" font-size="10" font-weight="600" letter-spacing="0.5">xmr-mesh</text>
+      <text x="350" y="200" text-anchor="middle" fill="#8b949e" font-size="8">X25519 + AES-256-GCM</text>
+    </g>
+
+    <!-- Miner A -->
+    <g id="node-miner-a">
+      <rect x="260" y="245" width="100" height="40" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1" opacity="0.7"/>
+      <text x="310" y="261" text-anchor="middle" fill="#8b949e" font-size="9">XMRig A</text>
+      <text x="310" y="277" text-anchor="middle" fill="#8b949e" font-size="8">→ 127.0.0.1</text>
+    </g>
+
+    <!-- Miner B -->
+    <g id="node-miner-b">
+      <rect x="390" y="245" width="100" height="40" rx="6" fill="#161b22" stroke="#30363d" stroke-width="1" opacity="0.7"/>
+      <text x="440" y="261" text-anchor="middle" fill="#8b949e" font-size="9">XMRig B</text>
+      <text x="440" y="277" text-anchor="middle" fill="#8b949e" font-size="8">→ 127.0.0.1</text>
+    </g>
+
+    <!-- Animated packets (hidden until needed) -->
+    <circle id="pkt-1" cx="-20" cy="-20" r="5" fill="#58a6ff" opacity="0"/>
+    <circle id="pkt-2" cx="-20" cy="-20" r="5" fill="#58a6ff" opacity="0"/>
+    <circle id="pkt-3" cx="-20" cy="-20" r="5" fill="#f85149" opacity="0"/>
+    <circle id="pkt-4" cx="-20" cy="-20" r="5" fill="#3fb950" opacity="0"/>
+
+    <!-- Divergence alert badge -->
+    <g id="alert-badge" opacity="0">
+      <rect x="245" y="30" width="210" height="22" rx="4" fill="#f85149" opacity="0.15"/>
+      <text x="350" y="45" text-anchor="middle" fill="#f85149" font-size="11" font-weight="700">⚠ SELFISH MINING DETECTED</text>
+    </g>
+
+    <!-- Resolved badge -->
+    <g id="resolved-badge" opacity="0">
+      <rect x="260" y="30" width="180" height="22" rx="4" fill="#3fb950" opacity="0.15"/>
+      <text x="350" y="45" text-anchor="middle" fill="#3fb950" font-size="11" font-weight="700">✓ CHAINS IN SYNC</text>
+    </g>
+  </svg>
+</div>
+
+<div class="hashes" id="hashesRow">
+  <div class="hash-box" id="hb-a">
+    <div class="hb-label">Proxy A prevhash</div>
+    <div class="hb-val" id="hb-a-val">—</div>
+  </div>
+  <div class="hash-box" id="hb-b">
+    <div class="hb-label">Proxy B prevhash</div>
+    <div class="hb-val" id="hb-b-val">—</div>
+  </div>
+</div>
+
+<div class="progress-track">
+  <div class="progress-fill" id="progressFill" style="width:10%"></div>
+</div>
+
+<div class="log" id="logBox"></div>
+
+<div class="controls">
+  <button class="btn btn-ghost" id="btnBack" onclick="goBack()">← Back</button>
+  <button class="btn btn-primary" id="btnNext" onclick="goNext()">Next →</button>
+</div>
+
+<footer>
+  <p>
+    <a href="https://github.com/xmr-hashguard/xmr-proxy">xmr-proxy</a> ·
+    <a href="https://github.com/xmr-hashguard/xmr-hashguard">xmr-hashguard</a> ·
+    <a href="https://github.com/xmr-hashguard/xmr-mesh">xmr-mesh</a> ·
+    LGPL-2.1
+  </p>
+</footer>
+
+<script>
+const BLOCK_100  = 'a1b2c3d4e5f6a1b2c3d4…0100';
+const BLOCK_PRIV = 'deadbeef0000deadbeef…0101 ⚠';
+const BLOCK_PUB  = 'f1e2d3c4b5a6f1e2d3c4…0101';
+
+const TOTAL_STEPS = 10;
+let currentStep = 0;
+
+// ─── Step definitions ────────────────────────────────────────────────────────
+const steps = [
+  {
+    label: 'OVERVIEW', labelColor: 'var(--blue)',
+    text: 'Two miners point to two different pools. Each pool connects through an <code>xmr-proxy</code> instance. The proxies are linked via an encrypted <code>xmr-mesh</code> federation. Every Stratum job notification leaks a <code>prevhash</code> — the hash of the block being extended. We compare them.',
+    phaseA: null, phaseB: null,
+    hbA: null, hbB: null, hbClass: '',
+    log: [
+      { c:'blue',   t:'[xmr-proxy]  XMRig A  →  Proxy A  →  Pool A' },
+      { c:'blue',   t:'[xmr-proxy]  XMRig B  →  Proxy B  →  Pool B' },
+      { c:'muted',  t:'[xmr-mesh]   Proxy A ↔ Proxy B  (encrypted WebSocket)' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      highlightNode('rect-proxy-a','#58a6ff','#0d1421');
+      highlightNode('rect-proxy-b','#58a6ff','#0d1421');
+      highlightNode('rect-mesh',   '#bc8cff','#140d21');
+    }
+  },
+  {
+    label: 'PHASE 1 — SYNC', labelColor: 'var(--green)',
+    text: 'Both pools are mining on the same public chain tip. Proxy A and Proxy B both see <code>prevhash = a1b2c3…</code>. They announce this to each other via the mesh. No divergence — everything is fine.',
+    phaseA: BLOCK_100, phaseB: BLOCK_100,
+    hbA: BLOCK_100, hbB: BLOCK_100, hbClass: 'match',
+    log: [
+      { c:'muted',  t:'[pool-a]     job  prev_hash = a1b2c3d4…0100' },
+      { c:'muted',  t:'[pool-b]     job  prev_hash = a1b2c3d4…0100' },
+      { c:'blue',   t:'[proxy-a]    announce prevhash → mesh' },
+      { c:'blue',   t:'[proxy-b]    announce prevhash → mesh' },
+      { c:'green',  t:'[monitor-a]  peer Proxy-B agrees  ✓' },
+      { c:'green',  t:'[monitor-b]  peer Proxy-A agrees  ✓' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      highlightNode('rect-pool-a',  '#3fb950','#0a1a0d');
+      highlightNode('rect-pool-b',  '#3fb950','#0a1a0d');
+      highlightNode('rect-proxy-a', '#3fb950','#0a1a0d');
+      highlightNode('rect-proxy-b', '#3fb950','#0a1a0d');
+      setLine('line-proxyA-mesh', '#3fb950');
+      setLine('line-proxyB-mesh', '#3fb950');
+      updateSvgText('pool-b-status', '● Honest', '#3fb950');
+      animPacket('pkt-1', 310, 100, 310, 165, '#3fb950');
+      animPacket('pkt-2', 390, 100, 390, 165, '#3fb950');
+    }
+  },
+  {
+    label: 'PHASE 2 — FORK BEGINS', labelColor: 'var(--red)',
+    text: 'Pool B finds a new block at height 3,000,001. Instead of broadcasting it to the network, it <strong>withholds it</strong> — this is selfish mining. Pool B now mines on its private chain while the rest of the network is on block 100.',
+    phaseA: BLOCK_100, phaseB: BLOCK_100,
+    hbA: BLOCK_100, hbB: BLOCK_100, hbClass: '',
+    log: [
+      { c:'muted',  t:'[network]    public tip = a1b2c3d4…0100' },
+      { c:'red',    t:'[pool-b]     found block 3000001 — WITHHOLDING' },
+      { c:'red',    t:'[pool-b]     mining private chain…' },
+      { c:'muted',  t:'[proxy-b]    still receiving jobs from Pool B…' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      highlightNode('rect-pool-b', '#f85149','#1a0a0a');
+      updateSvgText('pool-b-status', '● Selfish ⚠', '#f85149');
+      pulseNode('rect-pool-b');
+    }
+  },
+  {
+    label: 'PHASE 3 — PRIVATE JOB SENT', labelColor: 'var(--red)',
+    text: 'Pool B must give its miners something to work on — it sends them a job with the <em>private</em> chain tip as prevhash: <code>deadbeef…0101</code>. It cannot hide this from its own miners. The proxy intercepts it.',
+    phaseA: BLOCK_100, phaseB: BLOCK_PRIV,
+    hbA: BLOCK_100, hbB: BLOCK_PRIV, hbClass: 'diverge',
+    log: [
+      { c:'red',    t:'[pool-b]     job  prev_hash = deadbeef0000…0101  ← PRIVATE' },
+      { c:'blue',   t:'[proxy-b]    ← intercepted job notification' },
+      { c:'red',    t:'[proxy-b]    lastPrevhash = deadbeef0000…0101' },
+      { c:'blue',   t:'[proxy-b]    prevhash changed → announcing to mesh' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      highlightNode('rect-pool-b',  '#f85149','#1a0a0a');
+      highlightNode('rect-proxy-b', '#f85149','#1a0a0a');
+      updateSvgText('pool-b-status', '● Selfish ⚠', '#f85149');
+      updateSvgText('ph-pool-b',  'deadbeef…priv', '#f85149');
+      updateSvgText('ph-proxy-b', 'deadbeef…priv', '#f85149');
+      setLine('line-poolB-proxyB', '#f85149');
+      animPacket('pkt-3', 560, 80, 440, 80, '#f85149');
+    }
+  },
+  {
+    label: 'PHASE 4 — MESH BROADCAST', labelColor: 'var(--blue)',
+    text: 'Proxy B encrypts its new prevhash with AES-256-GCM and broadcasts it to all mesh peers (Proxy A). The frame is padded to a fixed bucket size so length reveals nothing. Proxy A receives and decrypts it.',
+    phaseA: BLOCK_100, phaseB: BLOCK_PRIV,
+    hbA: BLOCK_100, hbB: BLOCK_PRIV, hbClass: 'diverge',
+    log: [
+      { c:'blue',   t:'[proxy-b]    mesh.broadcast(PREVHASH_ANNOUNCE, {prevhash})' },
+      { c:'muted',  t:'[xmr-mesh]   encrypt(pad(json))  →  WebSocket frame' },
+      { c:'muted',  t:'[xmr-mesh]   frame size = 256 B (bucket padded)' },
+      { c:'blue',   t:'[proxy-a]    received PREVHASH_ANNOUNCE from Proxy-B' },
+      { c:'blue',   t:'[proxy-a]    peer deadbeef0000…0101 ≠ own a1b2c3d4…0100' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      highlightNode('rect-proxy-b', '#58a6ff','#0d1421');
+      highlightNode('rect-mesh',    '#58a6ff','#0d1421');
+      highlightNode('rect-proxy-a', '#58a6ff','#0d1421');
+      updateSvgText('pool-b-status', '● Selfish ⚠', '#f85149');
+      setLine('line-proxyB-mesh', '#58a6ff');
+      setLine('line-proxyA-mesh', '#58a6ff');
+      animPacket('pkt-3', 390, 100, 390, 165, '#f85149');
+      animPacket('pkt-1', 310, 165, 310, 100, '#58a6ff');
+    }
+  },
+  {
+    label: 'PHASE 5 — DIVERGENCE TIMER', labelColor: 'var(--yellow)',
+    text: 'Proxy A and Proxy B both start their divergence timers. A single-block mismatch could be normal propagation delay (1–2 s). The monitors wait <code>divergenceMs = 9 000 ms</code> before alerting. If it resolves before then — no alert.',
+    phaseA: BLOCK_100, phaseB: BLOCK_PRIV,
+    hbA: BLOCK_100, hbB: BLOCK_PRIV, hbClass: 'diverge',
+    log: [
+      { c:'yellow', t:'[monitor-a]  divergence seen  →  timer started (9 s)' },
+      { c:'yellow', t:'[monitor-b]  divergence seen  →  timer started (9 s)' },
+      { c:'muted',  t:'[monitor-a]  own=a1b2c3…  peer=deadbeef…  Δ=3s' },
+      { c:'muted',  t:'[monitor-b]  own=deadbeef…  peer=a1b2c3…  Δ=3s' },
+      { c:'yellow', t:'[monitor]    waiting for divergenceMs to expire…' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      highlightNode('rect-proxy-a', '#d29922','#1a1600');
+      highlightNode('rect-proxy-b', '#d29922','#1a1600');
+      updateSvgText('pool-b-status', '● Selfish ⚠', '#f85149');
+    }
+  },
+  {
+    label: 'PHASE 6 — ALERT FIRED', labelColor: 'var(--red)',
+    text: 'After 9 seconds of persistent divergence, both monitors fire the <code>divergence</code> event. The mismatch is not network jitter — Pool B is on a different chain. Selfish mining is confirmed.',
+    phaseA: BLOCK_100, phaseB: BLOCK_PRIV,
+    hbA: BLOCK_100, hbB: BLOCK_PRIV, hbClass: 'diverge',
+    log: [
+      { c:'red',    t:'[monitor-a]  🔴 DIVERGE  own=a1b2c3…  peer=deadbeef…  (9s)' },
+      { c:'red',    t:'[monitor-b]  🔴 DIVERGE  own=deadbeef…  peer=a1b2c3…  (9s)' },
+      { c:'red',    t:'[proxy-b]    🚨 SELFISH MINING DETECTED' },
+      { c:'red',    t:'[proxy-b]    broadcasting GUARD_ALERT to federation' },
+      { c:'yellow', t:'[proxy-a]    received GUARD_ALERT from Proxy-B  →  pollNow()' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      highlightNode('rect-proxy-a', '#f85149','#1a0a0a');
+      highlightNode('rect-proxy-b', '#f85149','#1a0a0a');
+      updateSvgText('pool-b-status', '● Selfish ⚠', '#f85149');
+      showBadge('alert-badge');
+      pulseNode('rect-proxy-b');
+      pulseNode('rect-proxy-a');
+    }
+  },
+  {
+    label: 'PHASE 7 — EVACUATE', labelColor: 'var(--orange)',
+    text: 'Proxy B switches XMRig to the first fallback pool. Future Stratum connections go to the fallback. Existing hashrate that was building the private chain is abandoned — the selfish miner loses its advantage.',
+    phaseA: BLOCK_100, phaseB: BLOCK_PRIV,
+    hbA: BLOCK_100, hbB: BLOCK_PRIV, hbClass: 'diverge',
+    log: [
+      { c:'red',    t:'[proxy-b]    EVACUATE  reason=selfish-mining' },
+      { c:'red',    t:'[proxy-b]    stratum.poolHost  →  pool.supportxmr.com:3333' },
+      { c:'muted',  t:'[xmr-b]     reconnecting to fallback pool…' },
+      { c:'green',  t:'[xmr-b]     connected to pool.supportxmr.com:3333  ✓' },
+      { c:'green',  t:'[proxy-b]    now mining on public chain' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      updateSvgText('pool-b-status', '● Evacuated', '#ffa657');
+      highlightNode('rect-proxy-b', '#ffa657','#1a1200');
+      highlightNode('rect-miner-b', '#ffa657','#1a1200');
+      showBadge('alert-badge');
+    }
+  },
+  {
+    label: 'PHASE 8 — POOL B REVEALS', labelColor: 'var(--purple)',
+    text: 'Pool B releases its withheld blocks. The network reorganizes. Both pools are now on the same chain tip: <code>f1e2d3…0101</code>. Proxy A sees the prevhashes converge and emits the <code>resolved</code> event.',
+    phaseA: BLOCK_PUB, phaseB: BLOCK_PUB,
+    hbA: BLOCK_PUB, hbB: BLOCK_PUB, hbClass: 'resolved',
+    log: [
+      { c:'purple', t:'[network]    Pool B reveals withheld block — reorg' },
+      { c:'muted',  t:'[pool-a]     job  prev_hash = f1e2d3c4…0101' },
+      { c:'muted',  t:'[pool-b]     job  prev_hash = f1e2d3c4…0101' },
+      { c:'blue',   t:'[proxy-a]    prevhash updated  →  announcing' },
+      { c:'blue',   t:'[proxy-b]    prevhash updated  →  announcing' },
+      { c:'green',  t:'[monitor-a]  all peers agree  →  resolved  ✓' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      updateSvgText('ph-pool-b',  'f1e2d3c4…0101', '#3fb950');
+      updateSvgText('ph-pool-a',  'f1e2d3c4…0101', '#3fb950');
+      updateSvgText('ph-proxy-a', 'f1e2d3c4…0101', '#3fb950');
+      updateSvgText('ph-proxy-b', 'f1e2d3c4…0101', '#3fb950');
+      updateSvgText('pool-b-status', '● Public chain', '#3fb950');
+      highlightNode('rect-pool-a',  '#3fb950','#0a1a0d');
+      highlightNode('rect-pool-b',  '#3fb950','#0a1a0d');
+      highlightNode('rect-proxy-a', '#3fb950','#0a1a0d');
+      highlightNode('rect-proxy-b', '#3fb950','#0a1a0d');
+      showBadge('resolved-badge');
+      animPacket('pkt-4', 310, 100, 390, 180, '#3fb950');
+      animPacket('pkt-2', 390, 100, 310, 180, '#3fb950');
+    }
+  },
+  {
+    label: 'SUMMARY', labelColor: 'var(--green)',
+    text: 'Detection complete. The selfish mining attempt was caught in <strong>~12 seconds</strong> — the time it takes for one divergent Stratum job to propagate through the federation and exceed the divergence threshold. <strong>Zero protocol changes. Zero miner modifications. Point XMRig at the proxy.</strong>',
+    phaseA: BLOCK_PUB, phaseB: BLOCK_PUB,
+    hbA: BLOCK_PUB, hbB: BLOCK_PUB, hbClass: 'resolved',
+    log: [
+      { c:'green',  t:'[result]  Selfish mining detected in ~12 s' },
+      { c:'green',  t:'[result]  Miners evacuated before pool revealed' },
+      { c:'green',  t:'[result]  No protocol changes required' },
+      { c:'green',  t:'[result]  No miner modifications required' },
+      { c:'muted',  t:'' },
+      { c:'blue',   t:'→  github.com/xmr-hashguard/xmr-proxy' },
+    ],
+    svgFn: () => {
+      resetSvg();
+      updateSvgText('pool-b-status', '● Revealed', '#3fb950');
+      highlightNode('rect-pool-a',  '#3fb950','#0a1a0d');
+      highlightNode('rect-pool-b',  '#3fb950','#0a1a0d');
+      highlightNode('rect-proxy-a', '#3fb950','#0a1a0d');
+      highlightNode('rect-proxy-b', '#3fb950','#0a1a0d');
+      highlightNode('rect-mesh',    '#3fb950','#0a1a0d');
+      showBadge('resolved-badge');
+    }
+  },
+];
+
+// ─── SVG helpers ─────────────────────────────────────────────────────────────
+function highlightNode(id, stroke, fill) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.setAttribute('stroke', stroke);
+  el.setAttribute('stroke-width', '2');
+  el.setAttribute('fill', fill);
+}
+function setLine(id, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.setAttribute('stroke', color);
+  el.setAttribute('stroke-width', '2');
+  el.setAttribute('marker-end', color === '#3fb950' ? 'url(#arr-green)' :
+                                 color === '#f85149' ? 'url(#arr-red)'   :
+                                 color === '#58a6ff' ? 'url(#arr-blue)'  : 'url(#arr)');
+}
+function updateSvgText(id, text, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  if (color) el.setAttribute('fill', color);
+}
+function showBadge(id) {
+  const el = document.getElementById(id);
+  if (el) { el.setAttribute('opacity','1'); el.classList.add('alert-pulse'); }
+}
+function pulseNode(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('alert-pulse');
+}
+function animPacket(id, x1, y1, x2, y2, color) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.setAttribute('cx', x1); el.setAttribute('cy', y1);
+  el.setAttribute('fill', color); el.setAttribute('opacity', '0');
+  let start = null;
+  const dur = 900;
+  function frame(ts) {
+    if (!start) start = ts;
+    const p = Math.min((ts - start) / dur, 1);
+    const ease = p < 0.5 ? 2*p*p : -1+(4-2*p)*p;
+    el.setAttribute('cx', x1 + (x2-x1)*ease);
+    el.setAttribute('cy', y1 + (y2-y1)*ease);
+    const a = p < 0.1 ? p/0.1 : p > 0.9 ? (1-p)/0.1 : 1;
+    el.setAttribute('opacity', a * 0.9);
+    if (p < 1) requestAnimationFrame(frame);
+    else el.setAttribute('opacity','0');
+  }
+  requestAnimationFrame(frame);
+}
+function resetSvg() {
+  ['rect-pool-a','rect-pool-b','rect-proxy-a','rect-proxy-b','rect-mesh']
+    .forEach(id => highlightNode(id,'#30363d','#161b22'));
+  ['line-proxyA-mesh','line-proxyB-mesh','line-poolA-proxyA','line-poolB-proxyB']
+    .forEach(id => setLine(id,'#30363d'));
+  ['alert-badge','resolved-badge'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.setAttribute('opacity','0'); el.classList.remove('alert-pulse'); }
+  });
+  ['rect-proxy-a','rect-proxy-b','rect-pool-b'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('alert-pulse');
+  });
+  updateSvgText('ph-pool-a',  'a1b2c3…0100', '#58a6ff');
+  updateSvgText('ph-pool-b',  'a1b2c3…0100', '#58a6ff');
+  updateSvgText('ph-proxy-a', '—', '#8b949e');
+  updateSvgText('ph-proxy-b', '—', '#8b949e');
+  updateSvgText('pool-b-status', '● Honest', '#8b949e');
+}
+
+// ─── Log helpers ─────────────────────────────────────────────────────────────
+function renderLog(lines) {
+  const box = document.getElementById('logBox');
+  box.innerHTML = '';
+  lines.forEach((l, i) => {
+    const div = document.createElement('div');
+    div.className = `log-line ${l.c}`;
+    div.textContent = l.t;
+    box.appendChild(div);
+    setTimeout(() => div.classList.add('show'), 60 * i);
+  });
+}
+
+// ─── Hash boxes ──────────────────────────────────────────────────────────────
+function renderHashes(step) {
+  const hbA = document.getElementById('hb-a');
+  const hbB = document.getElementById('hb-b');
+  const valA = document.getElementById('hb-a-val');
+  const valB = document.getElementById('hb-b-val');
+  valA.textContent = step.hbA || '—';
+  valB.textContent = step.hbB || '—';
+  hbA.className = `hash-box ${step.hbClass || ''}`;
+  hbB.className = `hash-box ${step.hbClass || ''}`;
+}
+
+// ─── Dots ─────────────────────────────────────────────────────────────────────
+function renderDots() {
+  const container = document.getElementById('dots');
+  container.innerHTML = '';
+  steps.forEach((s, i) => {
+    const d = document.createElement('div');
+    const isAlert   = i === 6 || i === 7;
+    const isSuccess = i === 8 || i === 9;
+    if (i < currentStep) d.className = `dot ${isAlert ? 'alert' : isSuccess ? 'success' : 'done'}`;
+    else if (i === currentStep) d.className = `dot ${isAlert ? 'alert' : isSuccess ? 'success' : 'active'}`;
+    else d.className = 'dot';
+    container.appendChild(d);
+  });
+}
+
+// ─── Progress ────────────────────────────────────────────────────────────────
+function renderProgress() {
+  const pct = ((currentStep + 1) / TOTAL_STEPS) * 100;
+  const fill = document.getElementById('progressFill');
+  const isRed    = currentStep >= 2 && currentStep <= 7;
+  const isGreen  = currentStep >= 8;
+  fill.style.width = pct + '%';
+  fill.style.background = isGreen ? 'var(--green)' : isRed ? 'var(--red)' : 'var(--blue)';
+}
+
+// ─── Render step ─────────────────────────────────────────────────────────────
+function render() {
+  const s = steps[currentStep];
+  document.getElementById('stepCounter').textContent = `Step ${currentStep + 1} of ${TOTAL_STEPS}`;
+  document.getElementById('phaseLabel').textContent  = s.label;
+  document.getElementById('phaseLabel').style.color  = s.labelColor;
+  document.getElementById('phaseText').innerHTML     = s.text;
+  document.getElementById('btnBack').disabled = (currentStep === 0);
+  document.getElementById('btnNext').disabled = (currentStep === TOTAL_STEPS - 1);
+  document.getElementById('btnNext').textContent =
+    currentStep === TOTAL_STEPS - 1 ? '✓ Done' : 'Next →';
+  if (s.svgFn) s.svgFn();
+  renderLog(s.log || []);
+  renderHashes(s);
+  renderDots();
+  renderProgress();
+}
+
+function goNext() { if (currentStep < TOTAL_STEPS - 1) { currentStep++; render(); } }
+function goBack() { if (currentStep > 0) { currentStep--; render(); } }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ') goNext();
+  if (e.key === 'ArrowLeft')  goBack();
+});
+
+render();
+</script>
+</body>
+</html>
