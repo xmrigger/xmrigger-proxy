@@ -2,6 +2,7 @@
   "name": "xmr-proxy",
   "version": "0.1.0",
   "description": "Monero mining proxy — XMRig wrapper with pool safety guards and encrypted federation mesh.",
+  "author": "tnzx@proton.me",
   "license": "LGPL-2.1",
   "main": "src/proxy.js",
   "bin": {
