@@ -35,7 +35,12 @@ proxy cannot detect divergence.
 
 ## Install
 
+`xmr-proxy` depends on `xmr-hashguard` and `xmr-mesh` as local siblings.
+Clone all three into the same directory:
+
 ```bash
+git clone https://github.com/xmr-hashguard/xmr-hashguard
+git clone https://github.com/xmr-hashguard/xmr-mesh
 git clone https://github.com/xmr-hashguard/xmr-proxy
 cd xmr-proxy
 npm install
