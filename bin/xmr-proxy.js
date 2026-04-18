@@ -3,7 +3,7 @@
  * bin/xmr-proxy.js — CLI entry point
  *
  * Usage:
- *   xmr-proxy --pool pool.hashvault.pro:3333 [options]
+ *   xmrigger-proxy --pool pool.hashvault.pro:3333 [options]
  *
  * Then point XMRig to 127.0.0.1:3333 instead of the pool directly.
  *

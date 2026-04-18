@@ -94,7 +94,7 @@ function startMockPool(getPrevhash) {
 async function main() {
   console.log(`
 ${B('╔══════════════════════════════════════════════════════════╗')}
-${B('║')}       ${B('xmr-proxy — Full Integration Demo (v0.1.0)')}        ${B('║')}
+${B('║')}       ${B('xmrigger-proxy — Full Integration Demo (v0.1.0)')}        ${B('║')}
 ${B('╠══════════════════════════════════════════════════════════╣')}
 ${B('║')}  Stack    : StratumProxy + HashrateGuard + MeshNode    ${B('║')}
 ${B('║')}  Transport: X25519 ECDH + AES-256-GCM + bucket pad    ${B('║')}
