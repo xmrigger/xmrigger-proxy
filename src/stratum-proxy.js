@@ -20,10 +20,12 @@ class StratumProxy extends EventEmitter {
    * @param {number} opts.listenPort   Port XMRig connects to
    * @param {string} opts.poolHost     Upstream pool host
    * @param {number} opts.poolPort     Upstream pool port
+   * @param {string} [opts.listenHost] Bind address (default: '127.0.0.1')
    */
-  constructor({ listenPort, poolHost, poolPort }) {
+  constructor({ listenPort, poolHost, poolPort, listenHost }) {
     super();
     this.listenPort = listenPort;
+    this.listenHost = listenHost || '127.0.0.1';
     this.poolHost   = poolHost;
     this.poolPort   = poolPort;
     this._server    = null;
@@ -33,7 +35,7 @@ class StratumProxy extends EventEmitter {
   start() {
     return new Promise((resolve) => {
       this._server = net.createServer((miner) => this._onMiner(miner));
-      this._server.listen(this.listenPort, '127.0.0.1', resolve);
+      this._server.listen(this.listenPort, this.listenHost, resolve);
     });
   }
 
