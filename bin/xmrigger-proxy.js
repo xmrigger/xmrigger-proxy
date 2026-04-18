@@ -122,5 +122,3 @@ function shutdown() {
 process.on('SIGINT',  shutdown);
 process.on('SIGTERM', shutdown);
 
-process.on('SIGINT',  () => { proxy.stop(); process.exit(0); });
-process.on('SIGTERM', () => { proxy.stop(); process.exit(0); });
