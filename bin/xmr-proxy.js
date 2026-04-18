@@ -107,5 +107,13 @@ proxy.start().catch(e => {
   process.exit(1);
 });
 
+function shutdown() {
+  console.log('\n[xmrigger-proxy] shutting down…');
+  proxy.stop();
+  setTimeout(() => process.exit(0), 500);
+}
+process.on('SIGINT',  shutdown);
+process.on('SIGTERM', shutdown);
+
 process.on('SIGINT',  () => { proxy.stop(); process.exit(0); });
 process.on('SIGTERM', () => { proxy.stop(); process.exit(0); });

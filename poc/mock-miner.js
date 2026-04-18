@@ -89,9 +89,14 @@ sock.on('close', ()  => { log(yellow, '[closed]', 'connection closed'); process.
 
 function printJob(job, src) {
   jobCount++;
-  const ph = job.prev_hash || job.prevhash || '(none)';
+  const ph = job.prev_hash || job.prevhash || null;
   log(green, `[job #${jobCount}]`, `src=${src}  id=${job.job_id || '?'}`);
-  log(cyan,  '  prevhash', B(ph));
+  if (ph) {
+    log(cyan, '  prevhash', B(ph));
+  } else {
+    // dump all fields so we can see the real field name
+    log(yellow, '  fields', Object.keys(job).join(', '));
+  }
   if (job.height)  log(grey, '  height',   String(job.height));
   if (job.target)  log(grey, '  target',   job.target);
 }

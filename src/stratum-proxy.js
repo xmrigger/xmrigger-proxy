@@ -32,6 +32,7 @@ class StratumProxy extends EventEmitter {
     this.poolHost   = poolHost;
     this.poolPort   = poolPort;
     this._server    = null;
+    this._sockets   = new Set(); // track live connections for clean shutdown
     this.lastPrevhash = null;
   }
 
@@ -43,12 +44,20 @@ class StratumProxy extends EventEmitter {
   }
 
   stop() {
-    if (this._server) this._server.close();
+    if (this._server) {
+      this._server.close();
+      // close() stops accepting new connections but leaves existing ones open;
+      // destroy them explicitly so the port is released immediately
+      for (const s of this._sockets) s.destroy();
+      this._sockets.clear();
+    }
   }
 
   // ── Per-connection handler ────────────────────────────────────────────────
 
   _onMiner(miner) {
+    this._sockets.add(miner);
+    miner.on('close', () => this._sockets.delete(miner));
     const upstream = net.createConnection({ host: this.poolHost, port: this.poolPort });
 
     let minerBuf    = '';
@@ -101,15 +110,36 @@ class StratumProxy extends EventEmitter {
   }
 
   _extractPrevhash(msg) {
-    // Monero: job notification
-    if (msg.method === 'job' && msg.params && msg.params.prev_hash)
-      return msg.params.prev_hash;
-    // Monero: login response with embedded job
-    if (msg.result && msg.result.job && msg.result.job.prev_hash)
-      return msg.result.job.prev_hash;
+    let job = null;
+    if (msg.method === 'job' && msg.params)           job = msg.params;
+    if (msg.result && msg.result.job)                 job = msg.result.job;
+
+    if (job) {
+      // Preferred: pool exposes prev_hash directly (SupportXMR, MoneroOcean, etc.)
+      if (job.prev_hash) return job.prev_hash;
+      // Fallback: parse from Monero block header blob (pools that omit prev_hash, e.g. HashVault)
+      if (job.blob) return this._prevhashFromBlob(job.blob);
+    }
+
     // Bitcoin / Stratum v1: mining.notify params[1]
     if (msg.method === 'mining.notify' && Array.isArray(msg.params) && msg.params[1])
       return msg.params[1];
+
+    return null;
+  }
+
+  _prevhashFromBlob(blob) {
+    // Monero block header layout (all fields LEB128-varint encoded):
+    //   [major_version][minor_version][timestamp][prev_hash 32 B][nonce 4 B]...
+    // Parse two version varints then one timestamp varint, then read 32 bytes.
+    try {
+      let off = 0;
+      for (let field = 0; field < 3; field++) {   // skip major, minor, timestamp
+        while (parseInt(blob.slice(off, off + 2), 16) & 0x80) off += 2;
+        off += 2;
+      }
+      if (blob.length >= off + 64) return blob.slice(off, off + 64);
+    } catch { /* malformed blob */ }
     return null;
   }
 }
