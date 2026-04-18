@@ -1,7 +1,8 @@
 # xmrigger-proxy
 
-Transparent Stratum proxy for Monero miners. Sits between XMRig (or any
-Stratum miner) and the upstream pool. Adds two safety guards.
+The end-user product. Sits between XMRig and the pool — transparent, no miner reconfiguration needed. Combines `xmrigger` guards with `xmrigger-mesh` federation. One command and your XMRig is protected from oversized and dishonest pools.
+
+Part of the [xmrigger suite](https://github.com/xmrigger): `xmrigger` · `xmrigger-mesh` · `xmrigger-proxy`
 
 ---
 
