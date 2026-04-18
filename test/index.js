@@ -4,10 +4,10 @@
  * Run: node test/index.js
  */
 
-import { test, describe } from 'node:test';
-import assert from 'node:assert/strict';
-import { StratumProxy } from '../src/stratum-proxy.js';
-import { createAlertQuorum } from '../src/alert-quorum.js';
+const { test, describe }    = require('node:test');
+const assert                = require('node:assert/strict');
+const { StratumProxy }      = require('../src/stratum-proxy');
+const { createAlertQuorum } = require('../src/alert-quorum');
 
 // ── _prevhashFromBlob ─────────────────────────────────────────────────────────
 
