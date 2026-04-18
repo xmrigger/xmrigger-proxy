@@ -8,6 +8,12 @@
   "bin": {
     "xmrigger-proxy": "bin/xmrigger-proxy.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xmrigger/xmrigger-proxy.git"
+  },
+  "homepage": "https://github.com/xmrigger/xmrigger-proxy#readme",
+  "bugs": "https://github.com/xmrigger/xmrigger-proxy/issues",
   "engines": {
     "node": ">=15.0.0"
   },

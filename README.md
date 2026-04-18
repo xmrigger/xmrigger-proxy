@@ -128,6 +128,13 @@ node bin/xmrigger-proxy.js --pool pool.hashvault.pro:3333 --listen 4444 --mesh-p
 
 ## Demo
 
+### Interactive (browser)
+
+Open [`demo.html`](demo.html) in any browser — no server needed, no install.
+Animates the full selfish mining detection scenario: sync → fork → divergence alert → evacuation → resolve.
+
+### Terminal
+
 ```bash
 node poc/demo.js
 ```
@@ -196,7 +203,7 @@ await proxy.start();
   Use pools that support SSL (`ssl://`) where available.
 
 - **Mesh peer authentication is not implemented.** Any node can join the
-  federation. See [xmrigger-mesh](../xmrigger-mesh) known limitations.
+  federation. See [xmrigger-mesh](https://github.com/xmrigger/xmrigger-mesh) known limitations.
 
 - **Fallback on divergence uses the first configured fallback only.**
   Multiple-fallback rotation is not implemented.
