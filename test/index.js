@@ -6,8 +6,8 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { EventEmitter } from 'node:events';
 import { StratumProxy } from '../src/stratum-proxy.js';
+import { createAlertQuorum } from '../src/alert-quorum.js';
 
 // ── _prevhashFromBlob ─────────────────────────────────────────────────────────
 
@@ -133,108 +133,62 @@ describe('_prevhashFromBlob — Monero blob prevhash extraction', () => {
 
 // ── Alert quorum logic ────────────────────────────────────────────────────────
 //
-// The quorum logic lives inline inside XmrProxy.start() — we cannot import it
-// directly without booting the full proxy (TCP server + mesh node).
-// Instead, we extract the identical algorithm into a standalone testable
-// function and verify it matches the production behaviour.
-//
-// The extraction is 1:1 from proxy.js lines 167–191 — any change there
-// must be reflected here to keep tests accurate.
-
-/**
- * Standalone quorum tracker — mirrors the inline logic in XmrProxy.start().
- *
- * @param {object}   opts
- * @param {number}   opts.minAlertPeers  — quorum size
- * @param {number}   opts.alertWindowMs  — window before bucket expires
- * @param {Function} opts.onQuorum       — called with (pool) when quorum reached
- * @returns {{ receiveAlert: Function, _quorum: Map }}
- */
-function makeQuorumTracker({ minAlertPeers = 2, alertWindowMs = 60_000, onQuorum } = {}) {
-  const _alertQuorum = new Map();  // pool → { peers: Set, timer }
-
-  function receiveAlert({ payload, peerId }) {
-    const key = payload.pool || 'unknown';
-    if (!_alertQuorum.has(key)) {
-      const timer = setTimeout(() => _alertQuorum.delete(key), alertWindowMs);
-      _alertQuorum.set(key, { peers: new Set(), timer });
-    }
-    const bucket = _alertQuorum.get(key);
-    bucket.peers.add(peerId);
-    if (bucket.peers.size >= minAlertPeers) {
-      clearTimeout(bucket.timer);
-      _alertQuorum.delete(key);
-      if (onQuorum) onQuorum(key);
-    }
-  }
-
-  return { receiveAlert, _quorum: _alertQuorum };
-}
+// Tests import createAlertQuorum directly from src/alert-quorum.js —
+// the same module used by proxy.js. Changes to the production code are
+// automatically reflected here.
 
 describe('Alert quorum logic', () => {
 
   test('single peer does NOT trigger quorum (minAlertPeers=2)', () => {
     let pollCalled = false;
-    const tracker = makeQuorumTracker({
+    const quorum = createAlertQuorum({
       minAlertPeers: 2,
       alertWindowMs: 5_000,
       onQuorum: () => { pollCalled = true; },
     });
 
-    tracker.receiveAlert({ payload: { pool: 'pool.example.com:3333', reason: 'hashrate-threshold' }, peerId: 'peer-A' });
+    quorum.receive({ payload: { pool: 'pool.example.com:3333', reason: 'hashrate-threshold' }, peerId: 'peer-A' });
 
     assert.strictEqual(pollCalled, false,
       'pollNow must NOT be triggered by a single peer when minAlertPeers=2');
-    assert.strictEqual(tracker._quorum.get('pool.example.com:3333').peers.size, 1,
-      'quorum map must have 1 peer registered');
-
-    // Cleanup timers
-    for (const [, b] of tracker._quorum) clearTimeout(b.timer);
   });
 
-  test('two distinct peers trigger quorum and call pollNow', () => {
+  test('two distinct peers trigger quorum and call onQuorum', () => {
     let pollCalled = false;
     let pollPool   = null;
-    const tracker = makeQuorumTracker({
+    const quorum = createAlertQuorum({
       minAlertPeers: 2,
       alertWindowMs: 5_000,
       onQuorum: (pool) => { pollCalled = true; pollPool = pool; },
     });
 
     const pool = 'pool.example.com:3333';
-    tracker.receiveAlert({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-A' });
-    tracker.receiveAlert({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-B' });
+    quorum.receive({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-A' });
+    quorum.receive({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-B' });
 
-    assert.ok(pollCalled, 'pollNow must be triggered when 2 distinct peers alert');
+    assert.ok(pollCalled, 'onQuorum must be triggered when 2 distinct peers alert');
     assert.strictEqual(pollPool, pool, 'onQuorum must receive the pool key');
-    // Bucket is deleted after quorum
-    assert.ok(!tracker._quorum.has(pool), 'quorum bucket must be removed after reaching quorum');
   });
 
   test('same peer sending two alerts does NOT trigger quorum (Set dedup)', () => {
     let pollCalled = false;
-    const tracker = makeQuorumTracker({
+    const quorum = createAlertQuorum({
       minAlertPeers: 2,
       alertWindowMs: 5_000,
       onQuorum: () => { pollCalled = true; },
     });
 
     const pool = 'pool.example.com:3333';
-    // Same peerId twice — must be deduplicated by the Set
-    tracker.receiveAlert({ payload: { pool, reason: 'fork' }, peerId: 'peer-A' });
-    tracker.receiveAlert({ payload: { pool, reason: 'fork' }, peerId: 'peer-A' });
+    quorum.receive({ payload: { pool, reason: 'fork' }, peerId: 'peer-A' });
+    quorum.receive({ payload: { pool, reason: 'fork' }, peerId: 'peer-A' });
 
     assert.strictEqual(pollCalled, false,
       'duplicate alerts from same peer must not reach quorum');
-    assert.strictEqual(tracker._quorum.get(pool).peers.size, 1,
-      'Set must deduplicate same peerId');
-
-    for (const [, b] of tracker._quorum) clearTimeout(b.timer);
   });
 
   test('alerts for different pools are tracked independently', () => {
     const polled = new Set();
-    const tracker = makeQuorumTracker({
+    const quorum = createAlertQuorum({
       minAlertPeers: 2,
       alertWindowMs: 5_000,
       onQuorum: (pool) => polled.add(pool),
@@ -243,38 +197,34 @@ describe('Alert quorum logic', () => {
     const poolA = 'pool-a.com:3333';
     const poolB = 'pool-b.com:3333';
 
-    // poolA gets quorum, poolB does not
-    tracker.receiveAlert({ payload: { pool: poolA, reason: 'fork' }, peerId: 'peer-1' });
-    tracker.receiveAlert({ payload: { pool: poolA, reason: 'fork' }, peerId: 'peer-2' });
-    tracker.receiveAlert({ payload: { pool: poolB, reason: 'fork' }, peerId: 'peer-1' });
+    quorum.receive({ payload: { pool: poolA, reason: 'fork' }, peerId: 'peer-1' });
+    quorum.receive({ payload: { pool: poolA, reason: 'fork' }, peerId: 'peer-2' });
+    quorum.receive({ payload: { pool: poolB, reason: 'fork' }, peerId: 'peer-1' });
 
-    assert.ok(polled.has(poolA),   'poolA must reach quorum');
-    assert.ok(!polled.has(poolB),  'poolB must not reach quorum with only 1 peer');
-    assert.ok(tracker._quorum.has(poolB), 'poolB bucket still pending');
-
-    for (const [, b] of tracker._quorum) clearTimeout(b.timer);
+    assert.ok(polled.has(poolA),  'poolA must reach quorum');
+    assert.ok(!polled.has(poolB), 'poolB must not reach quorum with only 1 peer');
   });
 
   test('quorum requires exactly minAlertPeers distinct peers', () => {
     let pollCount = 0;
-    const tracker = makeQuorumTracker({
+    const quorum = createAlertQuorum({
       minAlertPeers: 3,
       alertWindowMs: 5_000,
       onQuorum: () => { pollCount++; },
     });
 
     const pool = 'pool.example.com:3333';
-    tracker.receiveAlert({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-X' });
+    quorum.receive({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-X' });
     assert.strictEqual(pollCount, 0, 'not reached after 1 peer');
 
-    tracker.receiveAlert({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-Y' });
+    quorum.receive({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-Y' });
     assert.strictEqual(pollCount, 0, 'not reached after 2 peers (need 3)');
 
-    tracker.receiveAlert({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-Z' });
+    quorum.receive({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-Z' });
     assert.strictEqual(pollCount, 1, 'reached exactly at 3 distinct peers');
 
-    // A fourth alert must NOT fire again (bucket deleted)
-    tracker.receiveAlert({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-W' });
+    // A fourth alert must NOT fire again (bucket deleted after quorum)
+    quorum.receive({ payload: { pool, reason: 'hashrate-threshold' }, peerId: 'peer-W' });
     assert.strictEqual(pollCount, 1, 'quorum fires exactly once per window');
   });
 

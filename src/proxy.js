@@ -19,6 +19,7 @@ const { StratumProxy }    = require('./stratum-proxy');
 const { HashrateMonitor } = require('xmrigger');
 const { PrevhashMonitor } = require('xmrigger');
 const { MeshNode, OPEN }  = require('xmrigger-mesh');
+const { createAlertQuorum } = require('./alert-quorum');
 
 class XmrProxy extends EventEmitter {
   /**
@@ -164,31 +165,22 @@ class XmrProxy extends EventEmitter {
       // Only trigger pollNow() when minAlertPeers distinct peers agree within
       // the alert window (alertWindowMs). Each node still uses its own
       // local threshold to decide whether to actually evacuate.
-      const minAlertPeers  = m.minAlertPeers  || m.minPeersForAlert || 2;
-      const alertWindowMs  = m.alertWindowMs  || 60_000;
-      const _alertQuorum   = new Map(); // pool → { peers: Set, timer }
+      const minAlertPeers = m.minAlertPeers || m.minPeersForAlert || 2;
+      const alertWindowMs = m.alertWindowMs || 60_000;
+
+      const quorum = createAlertQuorum({
+        minAlertPeers,
+        alertWindowMs,
+        onQuorum: (key) => {
+          this._log('warn', `quorum reached for ${key} — polling now`);
+          if (this.hashrateMonitor) this.hashrateMonitor.pollNow();
+        },
+      });
 
       this.meshNode.on(OPEN.GUARD_ALERT, ({ payload, peerId }) => {
         const key = payload.pool || 'unknown';
-        if (!_alertQuorum.has(key)) {
-          const timer = setTimeout(() => _alertQuorum.delete(key), alertWindowMs);
-          _alertQuorum.set(key, { peers: new Set(), timer });
-        }
-        const bucket = _alertQuorum.get(key);
-        bucket.peers.add(peerId);
-
-        const count = bucket.peers.size;
-        this._log('warn',
-          `federation alert: ${payload.reason} on ${key} ` +
-          `(${count}/${minAlertPeers} peers — ${count >= minAlertPeers ? 'quorum reached' : 'waiting'})`
-        );
-
-        if (count >= minAlertPeers) {
-          clearTimeout(bucket.timer);
-          _alertQuorum.delete(key);
-          this._log('warn', `quorum reached for ${key} — polling now`);
-          if (this.hashrateMonitor) this.hashrateMonitor.pollNow();
-        }
+        this._log('warn', `federation alert: ${payload.reason} on ${key} from ${peerId}`);
+        quorum.receive({ payload, peerId });
       });
 
       this.prevhashMonitor.on('divergence', ({ ownPrevhash, divergentPeers, seenMs }) => {
