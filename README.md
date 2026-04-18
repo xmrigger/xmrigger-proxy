@@ -2,6 +2,8 @@
 
 Protects your miner from pools that grow too large or mine dishonestly — transparent, automatic, no XMRig reconfiguration needed.
 
+**[Live demo →](https://xmrigger.github.io/xmrigger-proxy/)**
+
 Part of the [xmrigger suite](https://github.com/xmrigger): `xmrigger` · `xmrigger-mesh` · `xmrigger-proxy`
 
 ---
