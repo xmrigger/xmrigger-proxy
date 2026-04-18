@@ -5,7 +5,7 @@
  * Three phases, ~30 s total:
  *   1. Stratum handshake  — TCP login → first job → prevhash extracted
  *   2. Network hashrate   — 6 independent Monero public nodes, first wins
- *   3. Concentration check— pool hashrate / network hashrate vs 30% threshold
+ *   3. Concentration check— pool hashrate / network hashrate vs 43% threshold
  *
  * No XMRig needed. Read-only: no shares submitted, no mining.
  *

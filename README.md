@@ -91,12 +91,16 @@ All options:
                             Set to 0.0.0.0 when miner runs in a separate
                             container or VM network namespace.
 --fallback    <host:port>   Fallback pool, repeatable
---threshold   <0.0-1.0>     Hashrate threshold (default: 0.30)
+--threshold   <0.0-1.0>     Hashrate threshold (default: 0.43)
 --health      <url>         Pool /health endpoint
 --stats       <url>         Independent pool stats URL
 --seed        <wss://url>   Mesh peer seed, repeatable
 --mesh-port   <port>        Mesh listen port (default: 8765)
---divergence  <seconds>     Prevhash divergence threshold (default: 20)
+--divergence    <seconds>   Prevhash divergence threshold (default: 20)
+--alert-quorum  <n>         Peers that must agree before a GUARD_ALERT triggers a local
+                            poll (default: 2). Prevents a single low-threshold node from
+                            flooding the federation with spurious polls.
+--alert-window  <seconds>   Time window for collecting quorum (default: 60)
 ```
 
 ---
@@ -158,7 +162,7 @@ const proxy = new XmrProxy({
   poolPort:   3333,
   guard: {
     healthUrl:  'http://pool.hashvault.pro/pool/health',
-    threshold:  0.30,
+    threshold:  0.43,
     fallbacks:  [{ host: 'pool.supportxmr.com', port: 3333 }],
   },
   mesh: {

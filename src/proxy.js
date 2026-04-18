@@ -4,7 +4,7 @@
  *
  * Combines:
  *   - StratumProxy   transparent TCP proxy, extracts prevhash
- *   - HashrateMonitor guard against pool hashrate concentration (>30%)
+ *   - HashrateMonitor guard against pool hashrate concentration (>43%)
  *   - PrevhashMonitor guard against selfish mining via prevhash divergence
  *   - MeshNode        encrypted federation for cross-pool prevhash sharing
  *
@@ -30,14 +30,19 @@ class XmrProxy extends EventEmitter {
    * @param {number} opts.poolPort            Upstream pool port (default 3333)
    * @param {string} [opts.name]              Proxy name shown in mesh
    * @param {object} [opts.guard]             Guard config
-   * @param {number} [opts.guard.threshold]   Hashrate threshold (default 0.30)
+   * @param {number} [opts.guard.threshold]   Hashrate threshold (default 0.43)
    * @param {string} [opts.guard.statsUrl]    Independent pool stats URL
    * @param {string} [opts.guard.healthUrl]   Pool /health endpoint
    * @param {object[]} [opts.guard.fallbacks] Fallback pools [{host,port}]
    * @param {object} [opts.mesh]              Mesh config
    * @param {number} [opts.mesh.port]         Mesh listen port (default 8765)
    * @param {string[]} [opts.mesh.seeds]      Peer seed URLs
-   * @param {number} [opts.mesh.divergenceMs] Divergence threshold ms (default 20000)
+   * @param {number} [opts.mesh.divergenceMs]  Divergence threshold ms (default 20000)
+   * @param {number} [opts.mesh.minAlertPeers] Quorum of peers required before a GUARD_ALERT
+   *   triggers a local poll (default: same as minPeersForAlert, min 2).
+   *   Prevents a single low-threshold node from flooding the federation with polls.
+   * @param {number} [opts.mesh.alertWindowMs] Time window in ms for collecting quorum alerts
+   *   from distinct peers (default 60000). Alerts older than this window are discarded.
    */
   constructor({
     listenPort = 3333,
@@ -96,10 +101,19 @@ class XmrProxy extends EventEmitter {
       this.hashrateMonitor.on('crit',  ({ hashratePct }) => {
         this._log('crit', `pool at ${pct(hashratePct)} — grace period started`);
         this.emit('guard-crit', { hashratePct });
+        // hint federation peers — they decide independently via their own threshold
+        this.meshNode?.broadcast(OPEN.GUARD_ALERT, {
+          reason: 'hashrate-threshold',
+          pool:   `${this.poolHost}:${this.poolPort}`,
+        });
       });
       this.hashrateMonitor.on('fork',  () => {
         this._log('crit', 'fork detected — evacuating immediately');
         this.emit('guard-fork');
+        this.meshNode?.broadcast(OPEN.GUARD_ALERT, {
+          reason: 'fork',
+          pool:   `${this.poolHost}:${this.poolPort}`,
+        });
       });
       this.hashrateMonitor.on('evacuate', ({ reason, fallback }) => {
         this._onEvacuate(reason, fallback);
@@ -110,7 +124,7 @@ class XmrProxy extends EventEmitter {
       });
 
       this.hashrateMonitor.start();
-      this._log('info', `hashrate guard active — threshold ${pct(g.threshold || 0.30)}`);
+      this._log('info', `hashrate guard active — threshold ${pct(g.threshold || 0.43)}`);
     }
 
     // ── Mesh node + prevhash guard ─────────────────────────────────────────
@@ -145,10 +159,36 @@ class XmrProxy extends EventEmitter {
         this.prevhashMonitor.onPeerAnnounce(peerId, payload.prevhash);
       });
 
-      // mesh guard alerts → immediate local poll
-      this.meshNode.on(OPEN.GUARD_ALERT, ({ payload }) => {
-        this._log('warn', `federation hint: ${payload.reason} from peer — polling now`);
-        if (this.hashrateMonitor) this.hashrateMonitor.pollNow();
+      // mesh guard alerts — require quorum before acting
+      // A single peer with a low threshold must not force polls on everyone.
+      // Only trigger pollNow() when minAlertPeers distinct peers agree within
+      // the alert window (alertWindowMs). Each node still uses its own
+      // local threshold to decide whether to actually evacuate.
+      const minAlertPeers  = m.minAlertPeers  || m.minPeersForAlert || 2;
+      const alertWindowMs  = m.alertWindowMs  || 60_000;
+      const _alertQuorum   = new Map(); // pool → { peers: Set, timer }
+
+      this.meshNode.on(OPEN.GUARD_ALERT, ({ payload, peerId }) => {
+        const key = payload.pool || 'unknown';
+        if (!_alertQuorum.has(key)) {
+          const timer = setTimeout(() => _alertQuorum.delete(key), alertWindowMs);
+          _alertQuorum.set(key, { peers: new Set(), timer });
+        }
+        const bucket = _alertQuorum.get(key);
+        bucket.peers.add(peerId);
+
+        const count = bucket.peers.size;
+        this._log('warn',
+          `federation alert: ${payload.reason} on ${key} ` +
+          `(${count}/${minAlertPeers} peers — ${count >= minAlertPeers ? 'quorum reached' : 'waiting'})`
+        );
+
+        if (count >= minAlertPeers) {
+          clearTimeout(bucket.timer);
+          _alertQuorum.delete(key);
+          this._log('warn', `quorum reached for ${key} — polling now`);
+          if (this.hashrateMonitor) this.hashrateMonitor.pollNow();
+        }
       });
 
       this.prevhashMonitor.on('divergence', ({ ownPrevhash, divergentPeers, seenMs }) => {

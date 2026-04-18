@@ -14,12 +14,15 @@
  *                                 Use 0.0.0.0 when miner runs in a separate container or VM.
  *   --name        <name>          Node name shown in mesh
  *   --fallback    <host:port>     Fallback pool (repeatable)
- *   --threshold   <0.0-1.0>       Hashrate concentration threshold (default: 0.30)
+ *   --threshold   <0.0-1.0>       Hashrate concentration threshold (default: 0.43)
  *   --health      <url>           Pool /health endpoint URL
  *   --stats       <url>           Independent pool stats URL
  *   --mesh-port   <port>          Mesh listen port (default: 8765)
  *   --seed        <wss://url>     Mesh seed peer (repeatable)
- *   --divergence  <seconds>       Prevhash divergence threshold (default: 20)
+ *   --divergence    <seconds>       Prevhash divergence threshold (default: 20)
+ *   --alert-quorum  <n>             Peers that must agree before a GUARD_ALERT triggers
+ *                                   a local poll (default: 2 — one peer never enough)
+ *   --alert-window  <seconds>       Window in which quorum is collected (default: 60)
  *
  * @license LGPL-2.1
  */
@@ -48,9 +51,11 @@ const name       = get('name', 'xmrigger-proxy');
 const threshold  = parseFloat(get('threshold', '0.43'));
 const healthUrl  = get('health', null);
 const statsUrl   = get('stats',  null);
-const meshPort   = parseInt(get('mesh-port', '8765'));
-const divergence = parseInt(get('divergence', '20')) * 1000;
-const fallbacks  = getAll('fallback').map(s => {
+const meshPort    = parseInt(get('mesh-port', '8765'));
+const divergence  = parseInt(get('divergence', '20')) * 1000;
+const alertQuorum = parseInt(get('alert-quorum', '2'));
+const alertWindow = parseInt(get('alert-window', '60')) * 1000;
+const fallbacks   = getAll('fallback').map(s => {
   const [host, port] = s.split(':');
   return { host, port: parseInt(port) || 3333 };
 });
@@ -92,9 +97,11 @@ const proxy = new XmrProxy({
     fallbacks,
   },
   mesh: {
-    port:         meshPort,
+    port:          meshPort,
     seeds,
-    divergenceMs: divergence,
+    divergenceMs:  divergence,
+    minAlertPeers: alertQuorum,
+    alertWindowMs: alertWindow,
   },
 });
 
