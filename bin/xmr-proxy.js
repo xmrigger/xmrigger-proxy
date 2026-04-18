@@ -10,6 +10,8 @@
  * Options:
  *   --pool        <host:port>     Upstream pool (required)
  *   --listen      <port>          Local Stratum port for XMRig (default: 3333)
+ *   --bind        <host>          Bind address (default: 127.0.0.1)
+ *                                 Use 0.0.0.0 when miner runs in a separate container or VM.
  *   --name        <name>          Node name shown in mesh
  *   --fallback    <host:port>     Fallback pool (repeatable)
  *   --threshold   <0.0-1.0>       Hashrate concentration threshold (default: 0.30)
@@ -41,6 +43,7 @@ function getAll(name) {
 
 const poolArg    = get('pool', null);
 const listenPort = parseInt(get('listen', '3333'));
+const listenHost = get('bind', '127.0.0.1');
 const name       = get('name', 'xmrigger-proxy');
 const threshold  = parseFloat(get('threshold', '0.30'));
 const healthUrl  = get('health', null);
@@ -67,17 +70,18 @@ console.log(`
 │           xmrigger-proxy  v0.1.0                   │
 ├─────────────────────────────────────────────────────┤
 │  Pool       ${(poolHost + ':' + poolPort).padEnd(39)}│
-│  Listen     127.0.0.1:${String(listenPort).padEnd(28)}│
+│  Listen     ${(listenHost + ':' + listenPort).padEnd(39)}│
 │  Threshold  ${(threshold * 100).toFixed(0).padEnd(38)}%│
 │  Fallbacks  ${String(fallbacks.length).padEnd(39)}│
 │  Mesh seeds ${String(seeds.length).padEnd(39)}│
 └─────────────────────────────────────────────────────┘
 `);
-console.log(`  Point XMRig to:  --url 127.0.0.1:${listenPort}\n`);
+console.log(`  Point XMRig to:  --url ${listenHost}:${listenPort}\n`);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 const proxy = new XmrProxy({
   listenPort,
+  listenHost,
   poolHost,
   poolPort,
   name,

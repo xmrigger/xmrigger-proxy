@@ -20,12 +20,15 @@ class StratumProxy extends EventEmitter {
    * @param {number} opts.listenPort   Port XMRig connects to
    * @param {string} opts.poolHost     Upstream pool host
    * @param {number} opts.poolPort     Upstream pool port
-   * @param {string} [opts.listenHost] Bind address (default: '127.0.0.1')
+   * @param {string} [opts.listenHost] Bind address (default: '127.0.0.1').
+   *   Override to '0.0.0.0' when running inside a Docker container or VM
+   *   where the miner connects from a different network namespace.
+   *   Keep the default for local setups — it prevents remote access to the proxy.
    */
   constructor({ listenPort, poolHost, poolPort, listenHost }) {
     super();
     this.listenPort = listenPort;
-    this.listenHost = listenHost || '127.0.0.1';
+    this.listenHost = listenHost || '127.0.0.1'; // localhost-only by default — safer for desktop use
     this.poolHost   = poolHost;
     this.poolPort   = poolPort;
     this._server    = null;

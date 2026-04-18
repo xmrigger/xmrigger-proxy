@@ -87,6 +87,9 @@ All options:
 ```
 --pool        <host:port>   Upstream pool (required)
 --listen      <port>        Local port for XMRig (default: 3333)
+--bind        <host>        Bind address (default: 127.0.0.1 — localhost only)
+                            Set to 0.0.0.0 when miner runs in a separate
+                            container or VM network namespace.
 --fallback    <host:port>   Fallback pool, repeatable
 --threshold   <0.0-1.0>     Hashrate threshold (default: 0.30)
 --health      <url>         Pool /health endpoint

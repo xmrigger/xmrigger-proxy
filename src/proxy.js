@@ -24,6 +24,8 @@ class XmrProxy extends EventEmitter {
   /**
    * @param {object} opts
    * @param {number} opts.listenPort          Port for XMRig to connect to (default 3333)
+   * @param {string} [opts.listenHost]        Bind address (default '127.0.0.1')
+   *   Set to '0.0.0.0' when XMRig runs in a separate container or VM network namespace.
    * @param {string} opts.poolHost            Upstream pool host
    * @param {number} opts.poolPort            Upstream pool port (default 3333)
    * @param {string} [opts.name]              Proxy name shown in mesh
@@ -39,6 +41,7 @@ class XmrProxy extends EventEmitter {
    */
   constructor({
     listenPort = 3333,
+    listenHost,
     poolHost,
     poolPort   = 3333,
     name       = 'xmrigger-proxy',
@@ -51,6 +54,7 @@ class XmrProxy extends EventEmitter {
 
     this.name       = name;
     this.listenPort = listenPort;
+    this.listenHost = listenHost || '127.0.0.1';
     this.poolHost   = poolHost;
     this.poolPort   = poolPort;
     this._guard     = guard;
@@ -66,6 +70,7 @@ class XmrProxy extends EventEmitter {
     // ── Stratum proxy ──────────────────────────────────────────────────────
     this.stratum = new StratumProxy({
       listenPort: this.listenPort,
+      listenHost: this.listenHost,
       poolHost:   this.poolHost,
       poolPort:   this.poolPort,
     });
@@ -175,7 +180,7 @@ class XmrProxy extends EventEmitter {
     }
 
     this._log('info',
-      `listening on 127.0.0.1:${this.listenPort}  →  ${this.poolHost}:${this.poolPort}`
+      `listening on ${this.listenHost}:${this.listenPort}  →  ${this.poolHost}:${this.poolPort}`
     );
     this.emit('ready', { listenPort: this.listenPort });
     return this;
