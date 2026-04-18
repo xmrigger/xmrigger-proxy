@@ -6,7 +6,7 @@
   "license": "LGPL-2.1",
   "main": "src/proxy.js",
   "bin": {
-    "xmrigger-proxy": "bin/xmr-proxy.js"
+    "xmrigger-proxy": "bin/xmrigger-proxy.js"
   },
   "engines": {
     "node": ">=15.0.0"

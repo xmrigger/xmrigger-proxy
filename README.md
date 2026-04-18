@@ -55,7 +55,7 @@ npm install
 
 ```bash
 # bash / Git Bash / macOS / Linux
-node bin/xmr-proxy.js \
+node bin/xmrigger-proxy.js \
   --pool      pool.hashvault.pro:3333 \
   --fallback  pool.supportxmr.com:3333 \
   --health    http://pool.hashvault.pro/pool/health \
@@ -64,7 +64,7 @@ node bin/xmr-proxy.js \
 
 ```powershell
 # PowerShell (Windows)
-node bin/xmr-proxy.js `
+node bin/xmrigger-proxy.js `
   --pool      pool.hashvault.pro:3333 `
   --fallback  pool.supportxmr.com:3333 `
   --health    http://pool.hashvault.pro/pool/health `
@@ -73,7 +73,7 @@ node bin/xmr-proxy.js `
 
 ```bash
 # one-liner (any shell)
-node bin/xmr-proxy.js --pool pool.hashvault.pro:3333 --fallback pool.supportxmr.com:3333 --health http://pool.hashvault.pro/pool/health --seed wss://peer.example.com:8765
+node bin/xmrigger-proxy.js --pool pool.hashvault.pro:3333 --fallback pool.supportxmr.com:3333 --health http://pool.hashvault.pro/pool/health --seed wss://peer.example.com:8765
 ```
 
 Then point XMRig to:
