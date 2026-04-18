@@ -101,6 +101,26 @@ All options:
 
 ---
 
+## Ports
+
+| Port | Direction | Default | Flag | Notes |
+|------|-----------|---------|------|-------|
+| `3333` | inbound — XMRig → proxy | `3333` | `--listen` | Change if another process already uses 3333 |
+| `8765` | inbound — mesh peers → this node | `8765` | `--mesh-port` | Must be reachable by other xmrigger-proxy nodes |
+| pool port | outbound — proxy → pool | from `--pool` | `--pool` | Typically 3333 (plain) or 443/4443 (SSL) |
+| fallback port | outbound — proxy → fallback pool | from `--fallback` | `--fallback` | Same as pool port |
+
+Both inbound ports bind to `127.0.0.1` by default. Set `--bind 0.0.0.0` only if XMRig runs in a separate container or VM.
+
+If port `3333` is already in use (e.g. another miner or proxy), pick any free port:
+
+```bash
+node bin/xmrigger-proxy.js --pool pool.hashvault.pro:3333 --listen 4444 --mesh-port 9765
+# then: xmrig --url 127.0.0.1:4444 --user YOUR_ADDRESS
+```
+
+---
+
 ## Demo
 
 ```bash
