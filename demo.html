@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>xmr-proxy — Selfish Mining Detection Demo</title>
+<title>xmrigger-proxy — Selfish Mining Detection Demo</title>
 <style>
   :root {
     --bg:       #0d1117;
@@ -196,7 +196,7 @@
 <body>
 
 <header>
-  <h1>xmr-proxy — Selfish Mining Detection</h1>
+  <h1>xmrigger-proxy — Selfish Mining Detection</h1>
   <p>A transparent Stratum proxy detects when a pool is building on a private chain,
      by comparing <code style="color:var(--orange);background:var(--bg2);padding:1px 6px;border-radius:4px;font-family:monospace">prevhash</code>
      values across a federation mesh. Zero protocol changes. Zero miner modifications.</p>
@@ -263,7 +263,7 @@
       <rect x="260" y="44" width="100" height="82" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5" id="rect-proxy-a"/>
       <text x="310" y="70" text-anchor="middle" fill="#8b949e" font-size="20" font-weight="600" letter-spacing="0.5">PROXY A</text>
       <text x="310" y="93" text-anchor="middle" fill="#58a6ff" font-size="15" id="ph-proxy-a" font-family="Consolas,monospace">—</text>
-      <text x="310" y="114" text-anchor="middle" fill="#8b949e" font-size="14">xmr-proxy</text>
+      <text x="310" y="114" text-anchor="middle" fill="#8b949e" font-size="14">xmrigger-proxy</text>
     </g>
 
     <!-- Proxy B -->
@@ -271,7 +271,7 @@
       <rect x="390" y="44" width="100" height="82" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5" id="rect-proxy-b"/>
       <text x="440" y="70" text-anchor="middle" fill="#8b949e" font-size="20" font-weight="600" letter-spacing="0.5">PROXY B</text>
       <text x="440" y="93" text-anchor="middle" fill="#58a6ff" font-size="15" id="ph-proxy-b" font-family="Consolas,monospace">—</text>
-      <text x="440" y="114" text-anchor="middle" fill="#8b949e" font-size="14">xmr-proxy</text>
+      <text x="440" y="114" text-anchor="middle" fill="#8b949e" font-size="14">xmrigger-proxy</text>
     </g>
 
     <!-- Pool B -->
@@ -285,7 +285,7 @@
     <!-- Mesh -->
     <g id="node-mesh">
       <rect x="268" y="198" width="164" height="56" rx="8" fill="#161b22" stroke="#30363d" stroke-width="1.5" id="rect-mesh"/>
-      <text x="350" y="222" text-anchor="middle" fill="#8b949e" font-size="20" font-weight="600" letter-spacing="0.5">xmr-mesh</text>
+      <text x="350" y="222" text-anchor="middle" fill="#8b949e" font-size="20" font-weight="600" letter-spacing="0.5">xmrigger-mesh</text>
       <text x="350" y="243" text-anchor="middle" fill="#8b949e" font-size="14">X25519 + AES-256-GCM</text>
     </g>
 
@@ -347,9 +347,9 @@
 
 <footer>
   <p>
-    <a href="https://github.com/xmr-hashguard/xmr-proxy">xmr-proxy</a> ·
+    <a href="https://github.com/xmrigger/xmrigger-proxy">xmrigger-proxy</a> ·
     <a href="https://github.com/xmr-hashguard/xmr-hashguard">xmr-hashguard</a> ·
-    <a href="https://github.com/xmr-hashguard/xmr-mesh">xmr-mesh</a> ·
+    <a href="https://github.com/xmrigger/xmrigger-mesh">xmrigger-mesh</a> ·
     LGPL-2.1
   </p>
 </footer>
@@ -366,13 +366,13 @@ let currentStep = 0;
 const steps = [
   {
     label: 'OVERVIEW', labelColor: 'var(--blue)',
-    text: 'Two miners point to two different pools. Each pool connects through an <code>xmr-proxy</code> instance. The proxies are linked via an encrypted <code>xmr-mesh</code> federation. Every Stratum job notification leaks a <code>prevhash</code> — the hash of the block being extended. We compare them.',
+    text: 'Two miners point to two different pools. Each pool connects through an <code>xmrigger-proxy</code> instance. The proxies are linked via an encrypted <code>xmrigger-mesh</code> federation. Every Stratum job notification leaks a <code>prevhash</code> — the hash of the block being extended. We compare them.',
     phaseA: null, phaseB: null,
     hbA: null, hbB: null, hbClass: '',
     log: [
-      { c:'blue',   t:'[xmr-proxy]  XMRig A  →  Proxy A  →  Pool A' },
-      { c:'blue',   t:'[xmr-proxy]  XMRig B  →  Proxy B  →  Pool B' },
-      { c:'muted',  t:'[xmr-mesh]   Proxy A ↔ Proxy B  (encrypted WebSocket)' },
+      { c:'blue',   t:'[xmrigger-proxy]  XMRig A  →  Proxy A  →  Pool A' },
+      { c:'blue',   t:'[xmrigger-proxy]  XMRig B  →  Proxy B  →  Pool B' },
+      { c:'muted',  t:'[xmrigger-mesh]   Proxy A ↔ Proxy B  (encrypted WebSocket)' },
     ],
     svgFn: () => {
       resetSvg();
@@ -454,8 +454,8 @@ const steps = [
     hbA: BLOCK_100, hbB: BLOCK_PRIV, hbClass: 'diverge',
     log: [
       { c:'blue',   t:'[proxy-b]    mesh.broadcast(PREVHASH_ANNOUNCE, {prevhash})' },
-      { c:'muted',  t:'[xmr-mesh]   encrypt(pad(json))  →  WebSocket frame' },
-      { c:'muted',  t:'[xmr-mesh]   frame size = 256 B (bucket padded)' },
+      { c:'muted',  t:'[xmrigger-mesh]   encrypt(pad(json))  →  WebSocket frame' },
+      { c:'muted',  t:'[xmrigger-mesh]   frame size = 256 B (bucket padded)' },
       { c:'blue',   t:'[proxy-a]    received PREVHASH_ANNOUNCE from Proxy-B' },
       { c:'blue',   t:'[proxy-a]    peer deadbeef0000…0101 ≠ own a1b2c3d4…0100' },
     ],
@@ -572,7 +572,7 @@ const steps = [
       { c:'green',  t:'[result]  No protocol changes required' },
       { c:'green',  t:'[result]  No miner modifications required' },
       { c:'muted',  t:'' },
-      { c:'blue',   t:'→  github.com/xmr-hashguard/xmr-proxy' },
+      { c:'blue',   t:'→  github.com/xmrigger/xmrigger-proxy' },
     ],
     svgFn: () => {
       resetSvg();

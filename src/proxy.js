@@ -16,9 +16,9 @@
 
 const { EventEmitter }    = require('events');
 const { StratumProxy }    = require('./stratum-proxy');
-const { HashrateMonitor } = require('xmr-hashguard');
-const { PrevhashMonitor } = require('xmr-hashguard');
-const { MeshNode, OPEN }  = require('xmr-mesh');
+const { HashrateMonitor } = require('xmrigger');
+const { PrevhashMonitor } = require('xmrigger');
+const { MeshNode, OPEN }  = require('xmrigger-mesh');
 
 class XmrProxy extends EventEmitter {
   /**
@@ -41,7 +41,7 @@ class XmrProxy extends EventEmitter {
     listenPort = 3333,
     poolHost,
     poolPort   = 3333,
-    name       = 'xmr-proxy',
+    name       = 'xmrigger-proxy',
     guard      = {},
     mesh       = {},
   } = {}) {
@@ -208,7 +208,7 @@ class XmrProxy extends EventEmitter {
 
   _log(level, msg) {
     const prefix = { info: '[info]', warn: '[warn]', crit: '[CRIT]' }[level] || '[info]';
-    console.log(`[xmr-proxy] ${prefix} ${msg}`);
+    console.log(`[xmrigger-proxy] ${prefix} ${msg}`);
   }
 }
 

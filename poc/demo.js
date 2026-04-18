@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * poc/demo.js — xmr-proxy full integration demo
+ * poc/demo.js — hashguard-proxy full integration demo
  *
  * Two XmrProxy instances, each with a mock Stratum pool, a real encrypted
- * xmr-mesh between them, and PrevhashMonitor detection wired end-to-end.
+ * hashguard-mesh between them, and PrevhashMonitor detection wired end-to-end.
  *
  * No XMRig needed. No real pools. One command.
  *

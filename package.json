@@ -1,12 +1,12 @@
 {
-  "name": "xmr-proxy",
+  "name": "xmrigger-proxy",
   "version": "0.1.0",
-  "description": "Monero mining proxy — XMRig wrapper with pool safety guards and encrypted federation mesh.",
+  "description": "Transparent Stratum proxy for XMRig — auto-evacuates from oversized or dishonest pools via xmrigger guards and encrypted federation mesh.",
   "author": "tnzx@proton.me",
   "license": "LGPL-2.1",
   "main": "src/proxy.js",
   "bin": {
-    "xmr-proxy": "bin/xmr-proxy.js"
+    "xmrigger-proxy": "bin/xmr-proxy.js"
   },
   "engines": {
     "node": ">=15.0.0"
@@ -20,7 +20,7 @@
     "test": "echo 'See poc/ for live demo' && exit 0"
   },
   "dependencies": {
-    "xmr-hashguard": "file:../xmr-hashguard",
-    "xmr-mesh":      "file:../xmr-mesh"
+    "xmrigger":      "file:../xmrigger",
+    "xmrigger-mesh": "file:../xmrigger-mesh"
   }
 }

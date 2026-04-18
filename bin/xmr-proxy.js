@@ -41,7 +41,7 @@ function getAll(name) {
 
 const poolArg    = get('pool', null);
 const listenPort = parseInt(get('listen', '3333'));
-const name       = get('name', 'xmr-proxy');
+const name       = get('name', 'xmrigger-proxy');
 const threshold  = parseFloat(get('threshold', '0.30'));
 const healthUrl  = get('health', null);
 const statsUrl   = get('stats',  null);
@@ -54,7 +54,7 @@ const fallbacks  = getAll('fallback').map(s => {
 const seeds = getAll('seed');
 
 if (!poolArg) {
-  console.error('[xmr-proxy] --pool <host:port> is required');
+  console.error('[xmrigger-proxy] --pool <host:port> is required');
   process.exit(1);
 }
 
@@ -64,7 +64,7 @@ const poolPort = parseInt(poolPortStr) || 3333;
 // ── Banner ────────────────────────────────────────────────────────────────────
 console.log(`
 ┌─────────────────────────────────────────────────────┐
-│              xmr-proxy  v0.1.0                      │
+│           xmrigger-proxy  v0.1.0                   │
 ├─────────────────────────────────────────────────────┤
 │  Pool       ${(poolHost + ':' + poolPort).padEnd(39)}│
 │  Listen     127.0.0.1:${String(listenPort).padEnd(28)}│
@@ -95,11 +95,11 @@ const proxy = new XmrProxy({
 });
 
 proxy.on('evacuate', ({ reason, fallback }) => {
-  if (!fallback) console.error('[xmr-proxy] No fallback — staying on current pool');
+  if (!fallback) console.error('[xmrigger-proxy] No fallback — staying on current pool');
 });
 
 proxy.start().catch(e => {
-  console.error('[xmr-proxy] Fatal:', e.message);
+  console.error('[xmrigger-proxy] Fatal:', e.message);
   process.exit(1);
 });
 

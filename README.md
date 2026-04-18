@@ -1,4 +1,4 @@
-# xmr-proxy
+# xmrigger-proxy
 
 Transparent Stratum proxy for Monero miners. Sits between XMRig (or any
 Stratum miner) and the upstream pool. Adds two safety guards.
@@ -8,11 +8,11 @@ Stratum miner) and the upstream pool. Adds two safety guards.
 ## What it does
 
 ```
-XMRig → 127.0.0.1:3333 → xmr-proxy → pool.hashvault.pro:3333
-                               │
-                          xmr-mesh
-                               │
-                     other xmr-proxy nodes
+XMRig → 127.0.0.1:3333 → xmrigger-proxy → pool.hashvault.pro:3333
+                                    │
+                             xmrigger-mesh
+                                    │
+                        other xmrigger-proxy nodes
 ```
 
 The miner points to `127.0.0.1:3333` instead of the pool directly.
@@ -25,7 +25,7 @@ and then switches to a fallback pool.
 
 **Guard 2 — Selfish mining detection**
 Extracts `prevhash` from every Stratum job notification. Shares it with
-federation peers via xmr-mesh. If divergence persists beyond a threshold
+federation peers via xmrigger-mesh. If divergence persists beyond a threshold
 (default 20 s), flags the pool as suspect and evacuates.
 
 Guard 2 requires at least one peer in the federation. A single isolated
@@ -35,14 +35,14 @@ proxy cannot detect divergence.
 
 ## Install
 
-`xmr-proxy` depends on `xmr-hashguard` and `xmr-mesh` as local siblings.
+`xmrigger-proxy` depends on `xmrigger` and `xmrigger-mesh` as local siblings.
 Clone all three into the same directory:
 
 ```bash
-git clone https://github.com/xmr-hashguard/xmr-hashguard
-git clone https://github.com/xmr-hashguard/xmr-mesh
-git clone https://github.com/xmr-hashguard/xmr-proxy
-cd xmr-proxy
+git clone https://github.com/xmrigger/xmrigger
+git clone https://github.com/xmrigger/xmrigger-mesh
+git clone https://github.com/xmrigger/xmrigger-proxy
+cd xmrigger-proxy
 npm install
 ```
 
@@ -126,7 +126,7 @@ Expected output:
 ## Use as a library
 
 ```js
-const { XmrProxy } = require('xmr-proxy');
+const { XmrProxy } = require('xmrigger-proxy');
 
 const proxy = new XmrProxy({
   listenPort: 3333,
@@ -167,7 +167,7 @@ await proxy.start();
   Use pools that support SSL (`ssl://`) where available.
 
 - **Mesh peer authentication is not implemented.** Any node can join the
-  federation. See [xmr-mesh](../xmr-mesh) known limitations.
+  federation. See [xmrigger-mesh](../xmrigger-mesh) known limitations.
 
 - **Fallback on divergence uses the first configured fallback only.**
   Multiple-fallback rotation is not implemented.
@@ -180,9 +180,9 @@ await proxy.start();
 ## Dependencies
 
 ```
-xmr-hashguard   (local)  — detection library
-xmr-mesh        (local)  — federation transport
-ws              ^8.0.0   — WebSocket (via xmr-mesh)
+xmrigger  (local)  — detection library
+xmrigger-mesh  (local)  — federation transport
+ws              ^8.0.0   — WebSocket (via xmrigger-mesh)
 ```
 
 ---
@@ -191,8 +191,8 @@ ws              ^8.0.0   — WebSocket (via xmr-mesh)
 
 | Repo | Role |
 |------|------|
-| [xmr-hashguard](https://github.com/xmr-hashguard/xmr-hashguard) | Detection library — `HashrateMonitor` + `PrevhashMonitor` |
-| [xmr-mesh](https://github.com/xmr-hashguard/xmr-mesh) | Encrypted federation transport — WebSocket gossip mesh |
+| [xmrigger](https://github.com/xmrigger/xmrigger) | Detection library — `HashrateMonitor` + `PrevhashMonitor` |
+| [xmrigger-mesh](https://github.com/xmrigger/xmrigger-mesh) | Encrypted federation transport — WebSocket gossip mesh |
 
 ---
 
