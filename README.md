@@ -21,7 +21,7 @@ Everything else is transparent.
 
 **Guard 1 — Hashrate concentration**
 Polls independent sources for the pool's share of total Monero network
-hashrate. If it exceeds a threshold (default 30%), starts a grace period
+hashrate. If it exceeds a threshold (default 43%), starts a grace period
 and then switches to a fallback pool.
 
 **Guard 2 — Selfish mining detection**
@@ -220,6 +220,7 @@ ws              ^8.0.0   — WebSocket (via xmrigger-mesh)
 
 ---
 
-## License
+## Project
 
-[LGPL-2.1](LICENSE)
+`xmrigger-proxy` is part of the [TNZX project](https://github.com/tnzx-project).
+Released under [LGPL-2.1](LICENSE).

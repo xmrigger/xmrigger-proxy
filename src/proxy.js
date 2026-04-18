@@ -83,7 +83,7 @@ class XmrProxy extends EventEmitter {
       this.hashrateMonitor = new HashrateMonitor({
         poolStatsUrl:   g.statsUrl  || null,
         poolHealthUrl:  g.healthUrl || null,
-        threshold:      g.threshold      || 0.30,
+        threshold:      g.threshold      || 0.43,
         pollIntervalMs: g.pollIntervalMs || 30_000,
         gracePeriodMs:  g.gracePeriodMs  || 60_000,
         fallbackPools:  g.fallbacks      || [],

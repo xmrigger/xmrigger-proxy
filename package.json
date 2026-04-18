@@ -17,6 +17,7 @@
   ],
   "scripts": {
     "demo": "node poc/demo.js",
+    "transcript": "node poc/hashvault-transcript.js",
     "test": "echo 'See poc/ for live demo' && exit 0"
   },
   "dependencies": {
