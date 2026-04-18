@@ -11,7 +11,9 @@
  * XMRig points to 127.0.0.1:listenPort instead of the pool directly.
  * Everything else is automatic.
  *
- * @license LGPL-2.1
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
  */
 
 const { EventEmitter }    = require('events');

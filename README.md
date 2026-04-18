@@ -1,6 +1,6 @@
 # xmrigger-proxy
 
-The end-user product. Sits between XMRig and the pool — transparent, no miner reconfiguration needed. Combines `xmrigger` guards with `xmrigger-mesh` federation. One command and your XMRig is protected from oversized and dishonest pools.
+Protects your miner from pools that grow too large or mine dishonestly — transparent, automatic, no XMRig reconfiguration needed.
 
 Part of the [xmrigger suite](https://github.com/xmrigger): `xmrigger` · `xmrigger-mesh` · `xmrigger-proxy`
 

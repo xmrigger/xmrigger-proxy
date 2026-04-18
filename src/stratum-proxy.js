@@ -8,7 +8,9 @@
  * Monero : mining.notify params[1]  OR  job params.prev_hash
  * Bitcoin: mining.notify params[1]
  *
- * @license LGPL-2.1
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
  */
 
 const net = require('net');

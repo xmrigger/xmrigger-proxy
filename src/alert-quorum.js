@@ -7,7 +7,9 @@
  * tracker call onQuorum(pool) — preventing a single low-threshold node
  * from flooding the federation with spurious polls.
  *
- * @license LGPL-2.1
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
  */
 
 /**

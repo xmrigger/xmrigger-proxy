@@ -10,7 +10,9 @@
  * Usage:
  *   node poc/mock-miner.js [--url 127.0.0.1:3333] [--wallet <addr>]
  *
- * @license LGPL-2.1
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
  */
 'use strict';
 

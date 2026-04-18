@@ -2,6 +2,10 @@
 /**
  * bin/xmrigger-proxy.js — CLI entry point
  *
+ * @version  0.1.0
+ * @released 2026-04-18
+ * @license  LGPL-2.1
+ *
  * Usage:
  *   xmrigger-proxy --pool pool.hashvault.pro:3333 [options]
  *
