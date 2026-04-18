@@ -90,6 +90,7 @@ All options:
 --bind        <host>        Bind address (default: 127.0.0.1 — localhost only)
                             Set to 0.0.0.0 when miner runs in a separate
                             container or VM network namespace.
+--name        <name>        Node name shown in mesh (default: xmrigger-proxy)
 --fallback    <host:port>   Fallback pool, repeatable
 --threshold   <0.0-1.0>     Hashrate threshold (default: 0.43)
 --health      <url>         Pool /health endpoint

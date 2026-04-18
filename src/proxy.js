@@ -134,7 +134,7 @@ class XmrProxy extends EventEmitter {
         port:  m.port ?? 8765,
         seeds: m.seeds || [],
         name:  this.name,
-        minPeersForAlert: m.minPeersForAlert || 2,
+        minPeersForAlert: m.minAlertPeers || m.minPeersForAlert || 2,
       });
       await this.meshNode.start();
 
@@ -143,7 +143,7 @@ class XmrProxy extends EventEmitter {
         getPrevhash:      () => this.stratum.lastPrevhash,
         pollIntervalMs:   m.pollIntervalMs   || 5_000,
         divergenceMs:     m.divergenceMs     || 20_000,
-        minPeersForAlert: m.minPeersForAlert || 2,
+        minPeersForAlert: m.minAlertPeers || m.minPeersForAlert || 2,
       });
 
       // stratum prevhash → mesh broadcast
