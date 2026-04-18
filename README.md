@@ -126,6 +126,21 @@ node bin/xmrigger-proxy.js --pool pool.hashvault.pro:3333 --listen 4444 --mesh-p
 
 ---
 
+## Tests
+
+```bash
+npm test
+# or: node test/index.js
+```
+
+14 tests — no external dependencies, no network calls, no XMRig needed.
+
+Covers: prevhash extraction from Monero blob (single/multi-byte varints,
+malformed input), alert quorum logic (dedup, per-pool tracking, exact
+threshold).
+
+---
+
 ## Demo
 
 ### Interactive (browser)
