@@ -32,7 +32,8 @@
  */
 'use strict';
 
-const { XmrProxy } = require('../src/proxy');
+const { XmrProxy }    = require('../src/proxy');
+const { StatsServer } = require('../src/stats-server');
 
 // ── Arg parsing ───────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
@@ -54,7 +55,8 @@ const listenHost = get('bind', '127.0.0.1');
 const name       = get('name', 'xmrigger-proxy');
 const threshold  = parseFloat(get('threshold', '0.43'));
 const healthUrl  = get('health', null);
-const statsUrl   = get('stats',  null);
+const statsUrl    = get('stats',  null);
+const statsPort   = parseInt(get('stats-port', '9090'));
 const meshPort    = parseInt(get('mesh-port', '8765'));
 const divergence  = parseInt(get('divergence', '20')) * 1000;
 const alertQuorum = parseInt(get('alert-quorum', '2'));
@@ -83,6 +85,7 @@ console.log(`
 │  Threshold  ${(threshold * 100).toFixed(0).padEnd(38)}%│
 │  Fallbacks  ${String(fallbacks.length).padEnd(39)}│
 │  Mesh seeds ${String(seeds.length).padEnd(39)}│
+│  Stats      ${('http://127.0.0.1:' + statsPort + '/stats').padEnd(39)}│
 └─────────────────────────────────────────────────────┘
 `);
 console.log(`  Point XMRig to:  --url ${listenHost}:${listenPort}\n`);
@@ -113,14 +116,19 @@ proxy.on('evacuate', ({ reason, fallback }) => {
   if (!fallback) console.error('[xmrigger-proxy] No fallback — staying on current pool');
 });
 
-proxy.start().catch(e => {
-  console.error('[xmrigger-proxy] Fatal:', e.message);
-  process.exit(1);
-});
+const statsServer = new StatsServer(proxy, statsPort).wire();
+
+proxy.start()
+  .then(() => statsServer.start())
+  .catch(e => {
+    console.error('[xmrigger-proxy] Fatal:', e.message);
+    process.exit(1);
+  });
 
 function shutdown() {
   console.log('\n[xmrigger-proxy] shutting down…');
   proxy.stop();
+  statsServer.stop();
   setTimeout(() => process.exit(0), 500);
 }
 process.on('SIGINT',  shutdown);

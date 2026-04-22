@@ -251,5 +251,4 @@ ws              ^8.0.0   — WebSocket (via xmrigger-mesh)
 
 ## Project
 
-`xmrigger-proxy` is part of the [TNZX project](https://github.com/tnzx-project).
 Released under [LGPL-2.1](LICENSE).
