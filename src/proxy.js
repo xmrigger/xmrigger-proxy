@@ -157,8 +157,10 @@ class XmrProxy extends EventEmitter {
         });
       });
 
-      // mesh peer announcements → prevhash monitor
+      // mesh peer announcements → prevhash monitor; track per-peer pool for stats
+      this._peerInfo = new Map();
       this.meshNode.on(OPEN.PREVHASH_ANNOUNCE, ({ payload, peerId }) => {
+        if (payload.pool) this._peerInfo.set(peerId, { pool: payload.pool });
         this.prevhashMonitor.onPeerAnnounce(peerId, payload.prevhash);
       });
 

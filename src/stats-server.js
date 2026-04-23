@@ -28,9 +28,11 @@ class StatsServer {
       hashratePct: null,         // 0.0–1.0, null when unknown
       alert:       null,         // null | 'approaching-threshold' | 'threshold-exceeded' | 'fork' | 'selfish-mining' | reason string
       peers:       0,            // mesh peers currently connected
+      connections: 0,            // miners currently connected to the local stratum proxy
       listenPort:  null,         // local Stratum port XMRig connects to
       threshold:   0.43,
       uptime:      Date.now(),
+      peerList:    [],           // [{id, pool, hashratePct}] per connected mesh peer
     };
   }
 
@@ -61,9 +63,25 @@ class StatsServer {
       });
     });
 
-    // Poll mesh peer count every 5s
+    // Sync live counters and latest hashratePct every 5s.
+    // HashrateMonitor emits 'safe' only on transitions, so without this
+    // the widget would show a stale pct between guard-state changes.
     this._peerTimer = setInterval(() => {
-      if (p.meshNode) this._patch({ peers: p.meshNode._sessions.size });
+      const updates = {};
+      if (p.meshNode) {
+        updates.peers    = p.meshNode._sessions.size;
+        updates.peerList = Array.from(p.meshNode._sessions.keys()).map(peerId => ({
+          id:          peerId.slice(0, 8),
+          pool:        p._peerInfo?.get(peerId)?.pool ?? null,
+          hashratePct: null,
+        }));
+      }
+      if (p.stratum)   updates.connections = p.stratum._sockets.size;
+      if (p.hashrateMonitor) {
+        const lp = p.hashrateMonitor.lastPct;
+        if (lp !== null && lp !== undefined) updates.hashratePct = lp;
+      }
+      this._patch(updates);
     }, 5_000);
 
     return this;
