@@ -160,8 +160,11 @@ class XmrProxy extends EventEmitter {
       // mesh peer announcements → prevhash monitor; track per-peer pool for stats
       this._peerInfo = new Map();
       this.meshNode.on(OPEN.PREVHASH_ANNOUNCE, ({ payload, peerId }) => {
-        if (payload.pool) this._peerInfo.set(peerId, { pool: payload.pool });
-        this.prevhashMonitor.onPeerAnnounce(peerId, payload.prevhash);
+        // Validate and cap untrusted peer fields to prevent memory exhaustion
+        const pool     = typeof payload.pool     === 'string' ? payload.pool.slice(0, 128)     : null;
+        const prevhash = typeof payload.prevhash === 'string' ? payload.prevhash.slice(0, 128) : null;
+        if (pool) this._peerInfo.set(peerId, { pool });
+        if (prevhash) this.prevhashMonitor.onPeerAnnounce(peerId, prevhash);
       });
 
       // mesh guard alerts — require quorum before acting
@@ -182,9 +185,11 @@ class XmrProxy extends EventEmitter {
       });
 
       this.meshNode.on(OPEN.GUARD_ALERT, ({ payload, peerId }) => {
-        const key = payload.pool || 'unknown';
-        this._log('warn', `federation alert: ${payload.reason} on ${key} from ${peerId}`);
-        quorum.receive({ payload, peerId });
+        // Cap untrusted strings before logging or passing to quorum
+        const reason = typeof payload.reason === 'string' ? payload.reason.slice(0, 64)  : 'unknown';
+        const pool   = typeof payload.pool   === 'string' ? payload.pool.slice(0, 128)   : 'unknown';
+        this._log('warn', `federation alert: ${reason} on ${pool} from ${peerId}`);
+        quorum.receive({ payload: { reason, pool }, peerId });
       });
 
       this.prevhashMonitor.on('divergence', ({ ownPrevhash, divergentPeers, seenMs }) => {

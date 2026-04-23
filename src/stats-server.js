@@ -88,6 +88,16 @@ class StatsServer {
   }
 
   start() {
+    // Simple token-bucket rate limiter: max 10 req/s per remote address
+    const _rl = new Map(); // addr → { count, resetAt }
+    const _rateLimit = (addr) => {
+      const now = Date.now();
+      let b = _rl.get(addr);
+      if (!b || now >= b.resetAt) { b = { count: 0, resetAt: now + 1000 }; _rl.set(addr, b); }
+      b.count++;
+      return b.count > 10;
+    };
+
     this._server = http.createServer((req, res) => {
       // Restrict to loopback — belt-and-suspenders on top of the listen address
       const remote = req.socket.remoteAddress;
@@ -97,8 +107,14 @@ class StatsServer {
         return;
       }
 
+      if (_rateLimit(remote)) {
+        res.writeHead(429);
+        res.end();
+        return;
+      }
+
       if (req.method === 'OPTIONS') {
-        res.writeHead(204, this._corsHeaders());
+        res.writeHead(204);
         res.end();
         return;
       }
@@ -109,7 +125,7 @@ class StatsServer {
         return;
       }
 
-      res.writeHead(200, { ...this._corsHeaders(), 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
       res.end(JSON.stringify(this._state));
     });
 
@@ -128,10 +144,9 @@ class StatsServer {
   _patch(patch) { Object.assign(this._state, patch); }
 
   _corsHeaders() {
-    return {
-      'Access-Control-Allow-Origin':  '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    };
+    // Loopback-only: no CORS header — browser cross-origin requests from
+    // arbitrary web pages must not be able to read local mining stats.
+    return {};
   }
 }
 
