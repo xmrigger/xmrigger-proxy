@@ -23,6 +23,7 @@
  *   --stats       <url>           Independent pool stats URL
  *   --mesh-port   <port>          Mesh listen port (default: 8765)
  *   --seed        <wss://url>     Mesh seed peer (repeatable)
+ *   --no-mesh                     Disable federation entirely (mesh + prevhash guard)
  *   --divergence    <seconds>       Prevhash divergence threshold (default: 20)
  *   --alert-quorum  <n>             Peers that must agree before a GUARD_ALERT triggers
  *                                   a local poll (default: 2 — one peer never enough)
@@ -48,6 +49,7 @@ function getAll(name) {
     if (argv[i] === '--' + name) out.push(argv[i + 1]);
   return out;
 }
+function has(name) { return argv.indexOf('--' + name) >= 0; }
 
 const poolArg    = get('pool', null);
 const listenPort = parseInt(get('listen', '3333'));
@@ -57,7 +59,10 @@ const threshold  = parseFloat(get('threshold', '0.43'));
 const healthUrl  = get('health', null);
 const statsUrl    = get('stats',  null);
 const statsPort   = parseInt(get('stats-port', '9090'));
-const meshPort    = parseInt(get('mesh-port', '8765'));
+// --no-mesh disables federation entirely (mesh + prevhash divergence guard).
+// XmrProxy only spins up MeshNode when mesh.port != null OR seeds are present.
+const meshDisabled = has('no-mesh');
+const meshPort    = meshDisabled ? null : parseInt(get('mesh-port', '8765'));
 const divergence  = parseInt(get('divergence', '20')) * 1000;
 const alertQuorum = parseInt(get('alert-quorum', '2'));
 const alertWindow = parseInt(get('alert-window', '60')) * 1000;
@@ -65,7 +70,7 @@ const fallbacks   = getAll('fallback').map(s => {
   const [host, port] = s.split(':');
   return { host, port: parseInt(port) || 3333 };
 });
-const seeds = getAll('seed');
+const seeds = meshDisabled ? [] : getAll('seed');
 
 if (!poolArg) {
   console.error('[xmrigger-proxy] --pool <host:port> is required');
@@ -84,7 +89,7 @@ console.log(`
 │  Listen     ${(listenHost + ':' + listenPort).padEnd(39)}│
 │  Threshold  ${(threshold * 100).toFixed(0).padEnd(38)}%│
 │  Fallbacks  ${String(fallbacks.length).padEnd(39)}│
-│  Mesh seeds ${String(seeds.length).padEnd(39)}│
+│  Mesh       ${(meshDisabled ? 'disabled' : `${seeds.length} seed(s)`).padEnd(39)}│
 │  Stats      ${('http://127.0.0.1:' + statsPort + '/stats').padEnd(39)}│
 └─────────────────────────────────────────────────────┘
 `);
