@@ -1,6 +1,6 @@
 {
   "name": "xmrigger-proxy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Transparent Stratum proxy for XMRig — auto-evacuates from oversized or dishonest pools via xmrigger guards and encrypted federation mesh.",
   "author": "tnzx@proton.me",
   "license": "LGPL-2.1",
@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "xmrigger":      "file:../xmrigger",
-    "xmrigger-mesh": "file:../xmrigger-mesh"
+    "xmrigger-mesh": "file:../xmrigger-mesh",
+    "ws":            "^8.0.0"
   }
 }
